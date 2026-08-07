@@ -149,9 +149,9 @@
   .ring-fg{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;
     stroke-dasharray:326.7;stroke-dashoffset:326.7;transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1), stroke .4s;
     filter:drop-shadow(0 0 6px currentColor)}
-  .ring-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .ring-num b{font-size:34px;font-weight:800;letter-spacing:2px;transition:color .4s}
-  .ring-num span{font-size:11px;color:var(--muted);margin-top:4px;white-space:nowrap;letter-spacing:.5px}
+  .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .ring-num b{font-size:38px;font-weight:800;letter-spacing:2px;transition:color .4s}
+  .beat-line{font-size:12px;color:var(--muted);margin-top:8px;letter-spacing:1px;text-align:center}
   .score-side{flex:1;min-width:0;text-align:center;margin-top:16px}
   .score-divider{width:48px;height:1px;margin:14px auto 0;
     background:linear-gradient(90deg,transparent,rgba(245,196,81,.3),transparent)}
@@ -367,8 +367,9 @@
               <circle class="ring-bg" cx="66" cy="66" r="52"></circle>
               <circle class="ring-fg" id="ringFg" cx="66" cy="66" r="52"></circle>
             </svg>
-            <div class="ring-num"><b id="rankCode">--</b><span id="beatLine">等待测算</span></div>
+            <div class="ring-num"><b id="rankCode">--</b></div>
           </div>
+          <div class="beat-line" id="beatLine">等待测算</div>
           <div class="score-side">
             <span class="grade" id="gradeChip">--</span>
             <div class="score-divider"></div>
@@ -553,19 +554,19 @@ function straightLen(s){
 
 /* 评级表：内部展示分 → 段位（SR 为最高） */
 const RANKS = [
-  {code:'SR',  min:98, name:'天选之号', cls:'rk-gold',   color:'#f5c451',
+  {code:'SR',  min:95, name:'天选之号', cls:'rk-gold',   color:'#f5c451',
     note:'万里挑一的天选靓号，凌驾于几乎全部随机号码之上，若被选中请务必珍惜。'},
-  {code:'SSS', min:94, name:'极品靓号', cls:'rk-gold',   color:'#f5c451',
+  {code:'SSS', min:88, name:'极品靓号', cls:'rk-gold',   color:'#f5c451',
     note:'可遇不可求的极品靓号，数字组合堪称完美，放心拿下。'},
-  {code:'SS',  min:88, name:'臻选之号', cls:'rk-purple', color:'#c4b5fd',
+  {code:'SS',  min:80, name:'臻选之号', cls:'rk-purple', color:'#c4b5fd',
     note:'极为难得的臻选之号，寓意出众，值得果断锁定。'},
-  {code:'S',   min:78, name:'优选好号', cls:'rk-purple', color:'#c4b5fd',
+  {code:'S',   min:70, name:'优选好号', cls:'rk-purple', color:'#c4b5fd',
     note:'百里挑一的优选好号，整体格局上佳，可以放心选择。'},
-  {code:'A',   min:68, name:'上等号码', cls:'rk-green',  color:'#6ee7b7',
+  {code:'A',   min:60, name:'上等号码', cls:'rk-green',  color:'#6ee7b7',
     note:'上等之选，整体寓意向好，值得纳入首选范围。'},
-  {code:'B',   min:55, name:'吉利号码', cls:'rk-teal',   color:'#5eead4',
+  {code:'B',   min:50, name:'吉利号码', cls:'rk-teal',   color:'#5eead4',
     note:'整体优于大多数随机号码，寓意平稳向好，可以考虑。'},
-  {code:'C',   min:40, name:'中平号码', cls:'rk-blue',   color:'#93c5fd',
+  {code:'C',   min:35, name:'中平号码', cls:'rk-blue',   color:'#93c5fd',
     note:'无明显吉凶特征，无功无过，随缘即可。'},
   {code:'D',   min:0,  name:'普通号码', cls:'rk-gray',   color:'#b6c2d6',
     note:'表现略逊于多数号码，若有更好选择可再挑选。'}
@@ -767,8 +768,8 @@ function genBody(type, bias){
 }
 function smartPick(type){
   let best = null;
-  for(let i=0;i<600;i++){
-    const a = analyze(genBody(type, true));
+  for(let i=0;i<30;i++){
+    const a = analyze(genBody(type, false));
     if(!best || a.score > best.score) best = a;
   }
   return best;
@@ -979,8 +980,8 @@ btnPick.addEventListener('click', ()=>{
   for(let i=0;i<n;i++){
     if(state.smart){
       let best = null;
-      for(let j=0;j<150;j++){
-        const a = analyze(genBody(state.type, true));
+      for(let j=0;j<20;j++){
+        const a = analyze(genBody(state.type, false));
         if(!best || a.score > best.score) best = a;
       }
       results.push(decorate(best, state.type));
