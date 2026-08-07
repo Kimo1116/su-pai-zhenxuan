@@ -200,28 +200,23 @@
     box-shadow:0 1px 6px rgba(245,196,81,.2)}
 
   /* ===== batch ===== */
-  .batch-panel{margin-top:18px;display:none}
-  .batch-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-  .batch-head .clear{border:none;background:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:1px}
-  .batch-head .clear:hover{color:var(--text)}
-  .brows{display:flex;flex-direction:column;gap:10px}
-  .acard{border:1px solid var(--border);border-radius:12px;background:var(--panel-2);overflow:hidden;
-    transition:border-color .15s, background .15s}
-  .acard.open{border-color:rgba(139,92,246,.5);background:rgba(139,92,246,.04);box-shadow:0 0 0 1px rgba(245,196,81,.06)}
-  .ahead{display:flex;align-items:center;gap:12px;padding:11px 14px;cursor:pointer}
-  .ahead:hover{background:rgba(139,92,246,.06)}
+  #batchZone{margin-top:18px;border-top:1px solid var(--border);padding-top:16px}
+  #batchZone .batch-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  #batchZone .batch-head .clear{border:none;background:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:1px}
+  #batchZone .batch-head .clear:hover{color:var(--text)}
+  .brows{display:flex;flex-direction:column;gap:6px}
+  .acard{border:1px solid var(--border);border-radius:10px;background:var(--panel-2);overflow:hidden;
+    transition:border-color .15s, background .15s, box-shadow .15s;cursor:pointer}
+  .acard:hover{background:rgba(139,92,246,.05)}
+  .acard.active{border-color:rgba(245,196,81,.35);background:rgba(245,196,81,.04);
+    box-shadow:0 0 0 1px rgba(245,196,81,.1)}
+  .ahead{display:flex;align-items:center;gap:10px;padding:9px 12px}
   .aspacer{flex:1}
-  .abody{display:none;padding:2px 14px 14px;border-top:1px solid var(--border)}
-  .acard.open .abody{display:block}
-  .averdict{font-size:12px;color:var(--muted);line-height:1.7;margin:12px 0 10px}
-  .areasons{display:flex;flex-direction:column;gap:7px}
-  .achev{flex:none;color:var(--muted);transition:transform .2s, color .2s}
-  .acard.open .achev{transform:rotate(90deg);color:var(--accent-2)}
-  .brank{flex:none;width:22px;height:22px;border-radius:7px;background:#1d1d27;color:var(--muted);
-    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
-  .acard.open .brank{background:var(--accent-soft);color:var(--accent-2)}
-  .bbeat{flex:none;font-size:12px;color:var(--muted);letter-spacing:.3px;white-space:nowrap}
-  .bgrade{flex:none;font-size:11px;letter-spacing:1px;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .brank{flex:none;width:20px;height:20px;border-radius:6px;background:#1d1d27;color:var(--muted);
+    font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .acard.active .brank{background:var(--gold-soft);color:var(--gold)}
+  .bbeat{flex:none;font-size:11px;color:var(--muted);letter-spacing:.3px;white-space:nowrap}
+  .bgrade{flex:none;font-size:10px;letter-spacing:1px;padding:3px 8px;border-radius:999px;white-space:nowrap}
 
   /* ===== 放大预览 ===== */
   #ocrLightbox{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
@@ -379,17 +374,15 @@
           <div class="reasons" id="reasonList"></div>
         </div>
       </div>
+      <div id="batchZone" style="display:none">
+        <div class="batch-head">
+          <div class="reason-title" style="margin:0">候选排序</div>
+          <button class="clear" id="btnClear">清空</button>
+        </div>
+        <div class="brows" id="batchList"></div>
+      </div>
     </section>
   </div>
-
-  <!-- 批量结果 -->
-  <section class="panel batch-panel" id="batchPanel">
-    <div class="batch-head">
-      <div class="panel-title" style="margin-bottom:0">候选号码排序（点击展开详细分析）</div>
-      <button class="clear" id="btnClear">清空</button>
-    </div>
-    <div class="brows" id="batchList"></div>
-  </section>
 
   <footer>
     号码吉凶判定基于数字谐音与民间俗信，仅供趣味参考，不构成任何选号建议。<br>
@@ -780,7 +773,7 @@ function smartPick(type){
 }
 
 /* ================= 状态与 DOM ================= */
-const state = { city:'A', type:'blue', mode:'pick', smart:true, batch:1, current:null, batchResults:[], ocrPosMap:{}, expandedIndex:0 };
+const state = { city:'A', type:'blue', mode:'pick', smart:true, batch:1, current:null, batchResults:[], ocrPosMap:{} };
 
 const $ = id => document.getElementById(id);
 const citySelect = $('citySelect'), typeSeg = $('typeSeg'), modeSeg = $('modeSeg'),
@@ -792,7 +785,7 @@ const citySelect = $('citySelect'), typeSeg = $('typeSeg'), modeSeg = $('modeSeg
   manualLabel = $('manualLabel'), manualInput = $('manualInput'), btnTest = $('btnTest'), greenWarn = $('greenWarn'),
   plateZone = $('plateZone'), resultBody = $('resultBody'), ringFg = $('ringFg'),
   rankCode = $('rankCode'), beatLine = $('beatLine'), gradeChip = $('gradeChip'), verdictEl = $('verdict'), reasonList = $('reasonList'), reasonWrap = $('reasonWrap'),
-  batchPanel = $('batchPanel'), batchList = $('batchList'), btnClear = $('btnClear');
+  batchPanel = $('batchZone'), batchList = $('batchList'), btnClear = $('btnClear');
 
 CITIES.forEach(c=>{
   const o = document.createElement('option');
@@ -904,14 +897,8 @@ function renderResult(a, animate){
   }
 
   verdictEl.textContent = rk.note;
-
-  const inBatch = state.batchResults.indexOf(a) >= 0;
-  if(inBatch){
-    reasonWrap.style.display = 'none';
-  } else {
-    reasonWrap.style.display = '';
-    reasonList.innerHTML = reasonRowsHTML(a.reasons);
-  }
+  reasonWrap.style.display = '';
+  reasonList.innerHTML = reasonRowsHTML(a.reasons);
 
   highlightBatchActive();
 }
@@ -920,12 +907,11 @@ function renderResult(a, animate){
 function renderBatch(){
   if(!state.batchResults.length){ batchPanel.style.display = 'none'; return; }
   batchPanel.style.display = 'block';
-  if(state.expandedIndex >= state.batchResults.length) state.expandedIndex = 0;
   batchList.innerHTML = state.batchResults.map((a,i)=>{
     if(!a.rank) decorate(a, a.type || state.type);
     const t = a.type || state.type;
-    const open = i === state.expandedIndex ? ' open' : '';
-    return '<div class="acard'+open+'" data-i="'+i+'">'
+    const active = state.current === a ? ' active' : '';
+    return '<div class="acard'+active+'" data-i="'+i+'">'
       + '<div class="ahead">'
       +   '<span class="brank">'+(i+1)+'</span>'
       +   '<span class="plate mini '+t+'">'+plateHTML(a.body, t)+'</span>'
@@ -933,17 +919,18 @@ function renderBatch(){
       +   '<span class="aspacer"></span>'
       +   '<span class="bgrade grade '+a.rank.cls+'">'+a.rank.code+'</span>'
       +   '<span class="bbeat">超越 '+fmtBeat(a.beat)+'%</span>'
-      +   '<svg class="achev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
-      + '</div>'
-      + '<div class="abody">'
-      +   '<div class="averdict">'+a.rank.note+'</div>'
-      +   '<div class="areasons">'+reasonRowsHTML(a.reasons)+'</div>'
       + '</div>'
       + '</div>';
   }).join('');
 }
 function highlightBatchActive(){
-  /* 手风琴以 .open 标记当前选中项，展开状态由 state.expandedIndex 驱动 */
+  if(!state.batchResults.length) return;
+  const cards = batchList.querySelectorAll('.acard');
+  cards.forEach(c=>{
+    const i = +c.dataset.i;
+    const a = state.batchResults[i];
+    c.classList.toggle('active', a === state.current);
+  });
 }
 
 /* ================= 事件 ================= */
@@ -1001,7 +988,6 @@ btnPick.addEventListener('click', ()=>{
   }
   results.sort((a,b)=>b.score - a.score);
   state.batchResults = results;
-  state.expandedIndex = 0;
   renderBatch();
   renderResult(results[0], true);
 });
@@ -1014,16 +1000,13 @@ btnClear.addEventListener('click', ()=>{
   renderBatch();
 });
 batchList.addEventListener('click', e=>{
-  const head = e.target.closest('.ahead');
-  if(!head) return;
-  const card = head.closest('.acard');
+  const card = e.target.closest('.acard');
   if(!card) return;
   const i = +card.dataset.i;
   const a = state.batchResults[i];
   if(!a) return;
-  state.expandedIndex = i;
-  renderBatch();
   renderResult(a, false);
+  renderBatch();
 });
 
 /* ================= 图片选号（本机 OCR） ================= */
@@ -1527,7 +1510,6 @@ btnRank.addEventListener('click', ()=>{
   const uniq = [...new Set(tokens)];
   const results = uniq.map(b=>decorate(analyze(b), state.type)).sort((a,b)=>b.score - a.score);
   state.batchResults = results.slice(0, 10);
-  state.expandedIndex = 0;
   renderBatch();
   renderResult(results[0], true);
   annotateImage();
