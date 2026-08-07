@@ -158,8 +158,6 @@
   .rk-teal{background:rgba(45,212,191,.1);color:#5eead4;box-shadow:inset 0 0 0 1px rgba(45,212,191,.28)}
   .rk-blue{background:rgba(147,197,253,.1);color:#93c5fd;box-shadow:inset 0 0 0 1px rgba(147,197,253,.25)}
   .rk-gray{background:rgba(148,163,184,.12);color:#b6c2d6;box-shadow:inset 0 0 0 1px rgba(148,163,184,.25)}
-  .rk-orange{background:rgba(251,146,60,.1);color:#fdba74;box-shadow:inset 0 0 0 1px rgba(251,146,60,.3)}
-  .rk-red{background:rgba(248,113,113,.1);color:#fca5a5;box-shadow:inset 0 0 0 1px rgba(248,113,113,.3)}
 
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   .panel{animation:fadeUp .5s ease both}
@@ -557,16 +555,12 @@ const RANKS = [
     note:'百里挑一的优选好号，整体格局上佳，可以放心选择。'},
   {code:'A',   min:68, name:'上等号码', cls:'rk-green',  color:'#6ee7b7',
     note:'上等之选，整体寓意向好，值得纳入首选范围。'},
-  {code:'B',   min:58, name:'吉利号码', cls:'rk-teal',   color:'#5eead4',
+  {code:'B',   min:55, name:'吉利号码', cls:'rk-teal',   color:'#5eead4',
     note:'整体优于大多数随机号码，寓意平稳向好，可以考虑。'},
-  {code:'C',   min:48, name:'中平号码', cls:'rk-blue',   color:'#93c5fd',
+  {code:'C',   min:40, name:'中平号码', cls:'rk-blue',   color:'#93c5fd',
     note:'无明显吉凶特征，无功无过，随缘即可。'},
-  {code:'D',   min:35, name:'普通号码', cls:'rk-gray',   color:'#b6c2d6',
-    note:'表现略逊于多数号码，若有更好选择可再挑选。'},
-  {code:'E',   min:20, name:'略弱号码', cls:'rk-orange', color:'#fdba74',
-    note:'民俗寓意略有瑕疵，整体表现偏弱，建议斟酌。'},
-  {code:'F',   min:0,  name:'建议避开', cls:'rk-red',    color:'#fca5a5',
-    note:'民俗寓意欠佳，建议优先考虑其他号码。'}
+  {code:'D',   min:0,  name:'普通号码', cls:'rk-gray',   color:'#b6c2d6',
+    note:'表现略逊于多数号码，若有更好选择可再挑选。'}
 ];
 function rankOf(score){
   for(const r of RANKS){ if(score >= r.min) return r; }
