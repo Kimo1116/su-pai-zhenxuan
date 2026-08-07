@@ -302,7 +302,7 @@
           <textarea id="candArea" rows="7" placeholder="识别出的号码会列在这里，也可以直接粘贴号码，每行一个&#10;例如：&#10;88A88&#10;16816&#10;D66668"></textarea>
         </div>
         <button class="btn-primary" id="btnRank" disabled>开始评估排序</button>
-        <div class="hint">识别全程在本机浏览器内完成，图片不会上传到任何服务器；5 / S 等易混字符会自动逐字复核，如仍有偏差，直接修改后再排序即可。</div>
+        <div class="hint">识别全程在本机浏览器内完成，图片不会上传到任何服务器；5/S、2/Z、0/D 等易混字符会自动逐字复核，如仍有偏差，直接修改后再排序即可。</div>
         <div class="warn" id="ocrError"></div>
       </div>
 
@@ -1110,10 +1110,10 @@ function extractCandidatesWithPos(words, srcW, srcH){
   return out.slice(0, 60);
 }
 
-/* ---------- 易混字符逐字精校（5/S 等） ---------- */
-const SUSPECT_CHARS = ['5','S'];
+/* ---------- 易混字符逐字精校（5/S、8、2/Z、0/D 等） ---------- */
+const SUSPECT_CHARS = ['5','S','8','2','Z','0','D'];
 const PLATE_WHITELIST = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-const MAX_REFINE_JOBS = 28;
+const MAX_REFINE_JOBS = 60;
 
 /* 候选第 i 个字符在源图中的 bbox：优先用 Tesseract 符号级 bbox，否则按词宽均分估算 */
 function charBoxes(cand){
@@ -1159,24 +1159,75 @@ function makeCharCrop(src, box, srcW, srcH){
   return cv;
 }
 
-/* 字形仲裁 5/S：「5」的顶横伸到最左，「S」的顶弧不贴左上角。
-   统计左上区域（高 28% × 宽 32%）墨迹占比，高→5，低→S，中间地带返回 null。
-   入参画布需已反色为白底黑字 */
-function guessFiveOrS(cv){
+/* 在裁剪图（白底黑字）上定位墨迹包围盒，返回字形相对区域的墨迹占比函数 */
+function inkMetrics(cv){
   const ctx = cv.getContext('2d');
   const w = cv.width, h = cv.height;
   const d = ctx.getImageData(0, 0, w, h).data;
-  const rw = Math.max(2, Math.floor(w * 0.32)), rh = Math.max(2, Math.floor(h * 0.28));
-  let ink = 0;
-  for(let y = 0; y < rh; y++){
-    for(let x = 0; x < rw; x++){
-      const i = (y * w + x) * 4;
-      if(d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114 < 128) ink++;
+  const lum = i => d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
+  let x0 = w, y0 = h, x1 = 0, y1 = 0;
+  for(let y = 0; y < h; y++){
+    for(let x = 0; x < w; x++){
+      if(lum((y*w+x)*4) < 128){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; }
     }
   }
-  const ratio = ink / (rw * rh);
-  if(ratio >= 0.25) return '5';
-  if(ratio <= 0.10) return 'S';
+  if(x1 <= x0 || y1 <= y0) return null;
+  const gw = x1 - x0 + 1, gh = y1 - y0 + 1;
+  return function inkIn(gx0, gy0, gx1, gy1){
+    const ax = x0 + Math.floor(gw * gx0), bx = x0 + Math.max(1, Math.floor(gw * gx1));
+    const ay = y0 + Math.floor(gh * gy0), by = y0 + Math.max(1, Math.floor(gh * gy1));
+    let ink = 0;
+    for(let y = ay; y < by; y++){
+      for(let x = ax; x < bx; x++){ if(lum((y*w+x)*4) < 128) ink++; }
+    }
+    return ink / ((bx-ax)*(by-ay));
+  };
+}
+
+/* 字形仲裁（阈值经 4 字体×2 底色×2 尺寸合成样本验证，均留保守过渡带）：
+   5/S/8 —— 8 的斜腰在中左区连通(≥0.76)；5 的竖笔落中左(≥0.40)；S 中左空旷(≤0.30)
+   Z/2/1/7 —— Z 顶横锐角贴满左上(≥0.68)，其余顶部偏弧(≤0.60)
+   0/D —— D 的竖笔+顶横填满左上角(≥0.82)，0 的弧线缺角(≤0.72)
+   D/C —— D 右侧闭合(≥0.70)，C 右侧开口(≤0.45) */
+function classify5S8(inkIn){
+  const diag = inkIn(0.10, 0.42, 0.42, 0.60);
+  if(diag >= 0.76) return '8';
+  if(diag > 0.68) return null;
+  const ml = inkIn(0.00, 0.40, 0.18, 0.60);
+  if(ml >= 0.40) return '5';
+  if(ml <= 0.30) return 'S';
+  return null;
+}
+function classifyZ(inkIn, other){
+  const tl = inkIn(0.00, 0.00, 0.28, 0.16);
+  if(tl >= 0.68) return 'Z';
+  if(tl <= 0.60) return other;
+  return null;
+}
+function classifyZeroD(inkIn){
+  const corner = inkIn(0.00, 0.00, 0.24, 0.24);
+  if(corner >= 0.82) return 'D';
+  if(corner <= 0.72) return '0';
+  return null;
+}
+function classifyDorC(inkIn){
+  const rm = inkIn(0.82, 0.38, 1.00, 0.62);
+  if(rm >= 0.70) return 'D';
+  if(rm <= 0.45) return 'C';
+  return null;
+}
+function pixArbitrate(oc, cropChar, cv){
+  if(!cropChar || cropChar === oc) return null;
+  const inkIn = inkMetrics(cv);
+  if(!inkIn) return null;
+  const pair = [oc, cropChar].sort().join('');
+  if('5S8'.indexOf(oc) >= 0 && '5S8'.indexOf(cropChar) >= 0) return classify5S8(inkIn);
+  if(oc === 'Z' || cropChar === 'Z'){
+    const other = oc === 'Z' ? cropChar : oc;
+    if('127'.indexOf(other) >= 0) return classifyZ(inkIn, other);
+  }
+  if(pair === '0D') return classifyZeroD(inkIn);
+  if(pair === 'CD') return classifyDorC(inkIn);
   return null;
 }
 
@@ -1216,12 +1267,12 @@ async function refineSuspects(worker, src, srcW, srcH, cands){
       const crop = makeCharCrop(src, boxes[i], srcW, srcH);
       if(!crop) continue;
       const oc = c.body[i];
-      const pix = (oc === '5' || oc === 'S') ? guessFiveOrS(crop) : null;
       let ch = oc;
       try{
         const { data } = await worker.recognize(crop);
         const t = normPlate((data.text || '').replace(/\s+/g, ''));
         const cc = t.match(/[0-9A-HJ-NP-Z]/);
+        const pix = pixArbitrate(oc, cc ? cc[0] : null, crop);
         ch = decideSuspectChar(oc, cc ? cc[0] : null, data.confidence || 0, pix);
       }catch(e){ ch = oc; }
       if(ch !== oc){
