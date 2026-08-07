@@ -277,7 +277,7 @@
           </select>
         </div>
         <button class="btn-primary" id="btnPick">开始机选</button>
-        <div class="hint">机选号码随机生成，符合江苏号牌编码规则：蓝牌 5 位序号，绿牌 6 位序号（首位为 D 纯电 / F 插混增程，末位为数字），均不含字母 I 与 O。</div>
+        <div class="hint">机选号码随机生成，符合江苏号牌编码规则：蓝牌 5 位序号，绿牌 6 位序号（首位为 D/F 纯电或 A/B 插混增程，末位为数字），均不含字母 I 与 O。</div>
       </div>
 
       <div id="ocrSection" style="display:none">
@@ -312,7 +312,7 @@
           <input type="text" id="manualInput" maxlength="5" placeholder="如 88A88" autocomplete="off" spellcheck="false">
         </div>
         <button class="btn-primary" id="btnTest" disabled>开始测号</button>
-        <div class="warn" id="greenWarn">提示：小型新能源号牌序号首位通常为 D（纯电）或 F（插混/增程），当前输入不影响测算。</div>
+        <div class="warn" id="greenWarn">提示：小型新能源号牌序号首位通常为 D/F（纯电）或 A/B（插混/增程），当前输入不影响测算。</div>
         <div class="hint">支持数字与字母组合，字母 I、O 会被自动过滤；输入完成后按回车亦可测算。</div>
       </div>
     </section>
@@ -720,7 +720,8 @@ function randDigit(bias){
 function genBody(type, bias){
   let s = '';
   if(type === 'green'){
-    s += Math.random()<0.5 ? 'D' : 'F';
+    const greenHead = ['D','F','A','B'];
+    s += greenHead[Math.floor(Math.random()*greenHead.length)];
     for(let i=0;i<5;i++){
       if(i === 4) s += randDigit(bias);
       else s += Math.random() < (bias?0.55:0.75) ? randDigit(bias) : LETTERS[Math.floor(Math.random()*LETTERS.length)];
@@ -1497,12 +1498,12 @@ btnRank.addEventListener('click', ()=>{
 
 function validateManual(){
   const need = state.type==='blue' ? 5 : 6;
-  manualLabel.textContent = state.type==='blue' ? '输入 5 位序号' : '输入 6 位序号（首位 D/F）';
+  manualLabel.textContent = state.type==='blue' ? '输入 5 位序号' : '输入 6 位序号（首位 A/B/D/F）';
   manualInput.maxLength = need;
   manualInput.placeholder = state.type==='blue' ? '如 88A88' : '如 D88888';
   const v = manualInput.value;
   btnTest.disabled = v.length !== need;
-  greenWarn.style.display = (state.type==='green' && v.length && v[0]!=='D' && v[0]!=='F') ? 'block' : 'none';
+  greenWarn.style.display = (state.type==='green' && v.length && 'ABDF'.indexOf(v[0]) < 0) ? 'block' : 'none';
 }
 manualInput.addEventListener('input', ()=>{
   manualInput.value = manualInput.value.toUpperCase().replace(/[^0-9A-Z]/g,'').replace(/[IO]/g,'');
