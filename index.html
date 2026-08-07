@@ -1157,36 +1157,38 @@ function roundRect(ctx, x, y, w, h, r){
   ctx.arcTo(x, y, x+w, y, r);
   ctx.closePath();
 }
-function drawTag(ctx, box, text, color, W, order){
+function drawTag(ctx, box, text, color, W, H, order){
   ctx.save();
-  ctx.font = '600 11px "Inter","Microsoft YaHei",sans-serif';
-  const padX = 7, h = 18;
+  ctx.font = '600 10px "Inter","Microsoft YaHei",sans-serif';
+  const padX = 6, h = 16;
   const tw = ctx.measureText(text).width;
-  const w = tw + padX*2 + 16; /* 16 留给序号小圆 */
-  const gap = 7;
-  let tx = box.x1 + gap;
-  if(tx + w > W - 2) tx = box.x0 - gap - w; /* 右侧放不下则翻到左侧 */
-  if(tx < 2) tx = Math.max(2, (box.x0+box.x1)/2 - w/2);
-  const ty = Math.max(2, box.y0 + (box.y1-box.y0)/2 - h/2);
-  ctx.fillStyle = 'rgba(16,16,22,.92)';
-  ctx.strokeStyle = color;
+  const w = tw + padX*2 + 14; /* 14 留给序号小圆 */
+  /* 贴着方块右上角放置：默认在角的外侧上方，横向向右延伸 */
+  let tx = box.x1 - 8;
+  let ty = box.y0 - h + 3;
+  if(ty < 2) ty = Math.min(box.y0 + 3, H - h - 2); /* 顶部放不下则贴角内侧 */
+  if(tx + w > W - 2) tx = box.x1 - w + 8; /* 右侧越界则向左收 */
+  if(tx + w > W - 2) tx = W - 2 - w; /* 收完仍越界则贴住右边缘 */
+  if(tx < 2) tx = 2;
+  ctx.fillStyle = 'rgba(10,10,14,.85)';
+  ctx.strokeStyle = hexToRgba(color, 0.9);
   ctx.lineWidth = 1;
-  roundRect(ctx, tx, ty, w, h, 9);
+  roundRect(ctx, tx, ty, w, h, 8);
   ctx.fill(); ctx.stroke();
   /* 序号小圆 */
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.arc(tx + 9, ty + h/2, 6, 0, Math.PI*2);
+  ctx.arc(tx + 8, ty + h/2, 5, 0, Math.PI*2);
   ctx.fill();
   ctx.fillStyle = '#0a0a0e';
-  ctx.font = '700 9px "Inter","Microsoft YaHei",sans-serif';
+  ctx.font = '700 8px "Inter","Microsoft YaHei",sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(String(order), tx + 9, ty + h/2 + 0.5);
-  /* 号码 + 段位 */
+  ctx.fillText(String(order), tx + 8, ty + h/2 + 0.5);
+  /* 号码 + 等级 */
   ctx.fillStyle = '#ececf1';
-  ctx.font = '600 11px "Inter","Microsoft YaHei",sans-serif';
+  ctx.font = '600 10px "Inter","Microsoft YaHei",sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(text, tx + 18, ty + h/2 + 0.5);
+  ctx.fillText(text, tx + 16, ty + h/2 + 0.5);
   ctx.restore();
 }
 function hexToRgba(hex, a){
@@ -1194,7 +1196,7 @@ function hexToRgba(hex, a){
   const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
   return 'rgba('+r+','+g+','+b+','+a+')';
 }
-/* 把前 5 名的圈选 + 标注画到指定画布（半透明，不遮挡相邻号牌） */
+/* 把前 5 名的圈选 + 标注画到指定画布（半透明方块 + 右上角号牌标签，尽量不遮挡相邻号牌） */
 function paintAnnotations(cv, imgEl){
   const posMap = state.ocrPosMap || {};
   const top = state.batchResults.slice(0, 5);
@@ -1213,18 +1215,17 @@ function paintAnnotations(cv, imgEl){
     const order = top.indexOf(a) + 1;
     const p = posMap[a.body];
     const x0 = p.fx0*dispW, y0 = p.fy0*dispH, x1 = p.fx1*dispW, y1 = p.fy1*dispH;
-    const cx = (x0+x1)/2, cy = (y0+y1)/2;
-    const rx = (x1-x0)/2 + 6, ry = (y1-y0)/2 + 6;
+    const pad = Math.max(2, Math.min(6, (x1-x0)*0.04));
+    const box = { x0:x0-pad, y0:y0-pad, x1:x1+pad, y1:y1+pad };
     const color = (a.rank && a.rank.color) || '#a78bfa';
-    ctx.fillStyle = hexToRgba(color, 0.16);
-    ctx.strokeStyle = hexToRgba(color, 0.85);
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+    ctx.fillStyle = hexToRgba(color, 0.12);
+    ctx.strokeStyle = hexToRgba(color, 0.9);
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, box.x0, box.y0, box.x1-box.x0, box.y1-box.y0, 4);
     ctx.fill();
     ctx.stroke();
     const label = a.body + ' · ' + ((a.rank && a.rank.code) || '');
-    drawTag(ctx, {x0:x0-rx, x1:x1+rx, y0:y0-ry, y1:y1+ry}, label, color, dispW, order);
+    drawTag(ctx, box, label, color, dispW, dispH, order);
   });
   cv.style.display = 'block';
 }
