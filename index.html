@@ -138,17 +138,24 @@
     border:1.5px dashed var(--border-strong);color:var(--muted);font-size:13px;letter-spacing:2px}
   .plate-caption{margin-top:14px;font-size:12px;color:var(--muted);letter-spacing:2px}
 
-  .score-zone{display:flex;align-items:center;gap:26px;padding:18px 4px 6px;border-top:1px solid var(--border)}
-  .ring-box{position:relative;width:132px;height:132px;flex:none}
-  .ring-box svg{width:132px;height:132px;transform:rotate(-90deg)}
-  .ring-bg{fill:none;stroke:#22222c;stroke-width:9}
-  .ring-fg{fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;
-    stroke-dasharray:326.7;stroke-dashoffset:326.7;transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1), stroke .4s}
+  .score-zone{display:flex;flex-direction:column;align-items:center;padding:24px 16px 20px;
+    border-top:1px solid var(--border);position:relative;
+    background:radial-gradient(ellipse 70% 60% at 50% 30%, rgba(139,92,246,.06), transparent 70%)}
+  .ring-box{position:relative;width:140px;height:140px;flex:none}
+  .ring-box::before{content:"";position:absolute;inset:12px;border-radius:50%;
+    background:radial-gradient(circle, rgba(139,92,246,.08) 0%, transparent 70%)}
+  .ring-box svg{width:140px;height:140px;transform:rotate(-90deg)}
+  .ring-bg{fill:none;stroke:#1e1d28;stroke-width:8}
+  .ring-fg{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;
+    stroke-dasharray:326.7;stroke-dashoffset:326.7;transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1), stroke .4s;
+    filter:drop-shadow(0 0 6px currentColor)}
   .ring-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .ring-num b{font-size:31px;font-weight:800;letter-spacing:1.5px;transition:color .4s}
-  .ring-num span{font-size:10.5px;color:var(--muted);margin-top:5px;white-space:nowrap}
-  .score-side{flex:1;min-width:0}
-  .verdict{font-size:13px;color:var(--muted);line-height:1.9;margin-top:12px}
+  .ring-num b{font-size:34px;font-weight:800;letter-spacing:2px;transition:color .4s}
+  .ring-num span{font-size:11px;color:var(--muted);margin-top:4px;white-space:nowrap;letter-spacing:.5px}
+  .score-side{flex:1;min-width:0;text-align:center;margin-top:16px}
+  .score-divider{width:48px;height:1px;margin:14px auto 0;
+    background:linear-gradient(90deg,transparent,rgba(245,196,81,.3),transparent)}
+  .verdict{font-size:13px;color:var(--muted);line-height:1.9;margin-top:10px;letter-spacing:.3px}
 
   .grade{display:inline-flex;padding:7px 16px;border-radius:999px;font-weight:700;font-size:14px;letter-spacing:2px}
   .rk-gold{background:linear-gradient(135deg,#f7d774 0%,#e8a93d 50%,#f5c451 100%);color:#3a2a05;
@@ -306,7 +313,7 @@
             <option value="10">10 个（批量对比）</option>
           </select>
         </div>
-        <button class="btn-primary" id="btnPick">开始机选</button>
+        <button class="btn-primary" id="btnPick">试试手气</button>
         <div class="hint">机选号码随机生成，符合江苏号牌编码规则：蓝牌 5 位序号，绿牌 6 位序号。</div>
       </div>
 
@@ -351,7 +358,7 @@
     <section class="panel">
       <div class="panel-title">测算结果</div>
       <div class="plate-zone" id="plateZone">
-        <div class="plate-empty">配置后点击「开始机选」生成号码</div>
+        <div class="plate-empty">配置后点击「试试手气」生成号码</div>
       </div>
       <div id="resultBody" style="display:none">
         <div class="score-zone">
@@ -364,6 +371,7 @@
           </div>
           <div class="score-side">
             <span class="grade" id="gradeChip">--</span>
+            <div class="score-divider"></div>
             <div class="verdict" id="verdict"></div>
           </div>
         </div>
@@ -600,7 +608,7 @@ function mapFinal(raw){
   if(raw <= 40){
     return Math.max(2, Math.round(40 + (raw - 40) * 0.8));
   }
-  const v = 40 + 60 * Math.sqrt((raw - 40) / 320);
+  const v = 40 + 60 * Math.sqrt((raw - 40) / 420);
   return Math.min(100, Math.round(v));
 }
 
