@@ -163,9 +163,12 @@
   .dz-t{font-size:13px;font-weight:600;margin-top:10px;letter-spacing:1px}
   .dz-d{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.7}
   #ocrPreviewWrap{position:relative;display:inline-block;max-width:100%;margin-bottom:14px;
-    border-radius:10px;border:1px solid var(--border);overflow:hidden;line-height:0}
+    border-radius:10px;border:1px solid var(--border);overflow:hidden;line-height:0;cursor:zoom-in}
   #ocrPreview{display:block;max-width:100%;max-height:320px}
   #ocrCanvas{position:absolute;left:0;top:0;pointer-events:none}
+  .zoom-hint{position:absolute;right:8px;bottom:8px;display:flex;align-items:center;gap:5px;
+    background:rgba(8,8,12,.75);border:1px solid var(--border);color:#c9c9d4;font-size:11px;
+    padding:4px 9px;border-radius:999px;letter-spacing:.5px;pointer-events:none;line-height:1}
   .pbar{height:6px;background:#1d1d27;border-radius:99px;overflow:hidden;margin-bottom:8px}
   .pbar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width .25s}
   .ptext{font-size:12px;color:var(--muted);margin-bottom:14px;letter-spacing:.5px}
@@ -181,18 +184,36 @@
   .batch-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
   .batch-head .clear{border:none;background:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:1px}
   .batch-head .clear:hover{color:var(--text)}
-  .brows{display:flex;flex-direction:column;gap:8px}
-  .brow{display:flex;align-items:center;gap:14px;padding:10px 14px;border:1px solid var(--border);
-    border-radius:12px;background:var(--panel-2);cursor:pointer;transition:border-color .15s, background .15s}
-  .brow:hover{border-color:var(--border-strong)}
-  .brow.active{border-color:rgba(139,92,246,.55);background:rgba(139,92,246,.06)}
+  .brows{display:flex;flex-direction:column;gap:10px}
+  .acard{border:1px solid var(--border);border-radius:12px;background:var(--panel-2);overflow:hidden;
+    transition:border-color .15s, background .15s}
+  .acard.open{border-color:rgba(139,92,246,.5);background:rgba(139,92,246,.04)}
+  .ahead{display:flex;align-items:center;gap:12px;padding:11px 14px;cursor:pointer}
+  .ahead:hover{background:rgba(139,92,246,.06)}
+  .aspacer{flex:1}
+  .abody{display:none;padding:2px 14px 14px;border-top:1px solid var(--border)}
+  .acard.open .abody{display:block}
+  .averdict{font-size:12px;color:var(--muted);line-height:1.7;margin:12px 0 10px}
+  .areasons{display:flex;flex-direction:column;gap:7px}
+  .achev{flex:none;color:var(--muted);transition:transform .2s, color .2s}
+  .acard.open .achev{transform:rotate(90deg);color:var(--accent-2)}
   .brank{flex:none;width:22px;height:22px;border-radius:7px;background:#1d1d27;color:var(--muted);
     font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
-  .brow.active .brank{background:var(--accent-soft);color:var(--accent-2)}
-  .bbar{flex:1;height:5px;border-radius:99px;background:#1d1d27;overflow:hidden;min-width:40px}
-  .bbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7c3aed,#a78bfa)}
-  .bbeat{flex:none;font-size:12px;color:var(--muted);min-width:72px;text-align:right;letter-spacing:.3px}
+  .acard.open .brank{background:var(--accent-soft);color:var(--accent-2)}
+  .bbeat{flex:none;font-size:12px;color:var(--muted);letter-spacing:.3px;white-space:nowrap}
   .bgrade{flex:none;font-size:11px;letter-spacing:1px;padding:4px 10px;border-radius:999px;white-space:nowrap}
+
+  /* ===== 放大预览 ===== */
+  #ocrLightbox{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    background:rgba(5,5,9,.88);backdrop-filter:blur(6px);padding:28px}
+  .lb-wrap{position:relative;line-height:0;border-radius:14px;overflow:hidden;
+    box-shadow:0 24px 80px rgba(0,0,0,.65);max-width:100%;max-height:100%}
+  #lbImg{display:block;max-width:92vw;max-height:88vh}
+  #lbCanvas{position:absolute;left:0;top:0;pointer-events:none}
+  .lb-close{position:absolute;top:18px;right:18px;width:40px;height:40px;border-radius:50%;z-index:2;
+    border:1px solid var(--border-strong);background:rgba(16,16,22,.9);color:var(--text);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:background .15s}
+  .lb-close:hover{background:rgba(139,92,246,.35)}
 
   footer{margin-top:26px;text-align:center;font-size:12px;color:#5d5d6b;line-height:1.9}
 </style>
@@ -269,6 +290,10 @@
         <div id="ocrPreviewWrap" style="display:none">
           <img id="ocrPreview" alt="截图预览">
           <canvas id="ocrCanvas"></canvas>
+          <span class="zoom-hint">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path><path d="M11 8v6M8 11h6"></path></svg>
+            点击放大
+          </span>
         </div>
         <div class="pbar" id="ocrBar" style="display:none"><i id="ocrBarFill"></i></div>
         <div class="ptext" id="ocrStatus"></div>
@@ -312,8 +337,10 @@
             <div class="verdict" id="verdict"></div>
           </div>
         </div>
-        <div class="reason-title">判定明细</div>
-        <div class="reasons" id="reasonList"></div>
+        <div id="reasonWrap">
+          <div class="reason-title">判定明细</div>
+          <div class="reasons" id="reasonList"></div>
+        </div>
       </div>
     </section>
   </div>
@@ -321,7 +348,7 @@
   <!-- 批量结果 -->
   <section class="panel batch-panel" id="batchPanel">
     <div class="batch-head">
-      <div class="panel-title" style="margin-bottom:0">候选号码排序（评级从高到低，点击查看详情）</div>
+      <div class="panel-title" style="margin-bottom:0">候选号码排序（点击展开详细分析）</div>
       <button class="clear" id="btnClear">清空</button>
     </div>
     <div class="brows" id="batchList"></div>
@@ -331,6 +358,17 @@
     号码吉凶判定基于数字谐音与民间俗信，仅供趣味参考，不构成任何选号建议。<br>
     「超越百分比」由约 2 万个随机生成号码的样本分布估算得出。正式选号请通过「交管 12123」或当地车管所官方渠道办理。
   </footer>
+</div>
+
+<!-- 放大预览 -->
+<div id="ocrLightbox" style="display:none">
+  <button class="lb-close" id="lbClose" aria-label="关闭">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+  </button>
+  <div class="lb-wrap">
+    <img id="lbImg" alt="放大预览">
+    <canvas id="lbCanvas"></canvas>
+  </div>
 </div>
 
 <script>
@@ -704,7 +742,7 @@ function smartPick(type){
 }
 
 /* ================= 状态与 DOM ================= */
-const state = { city:'A', type:'blue', mode:'pick', smart:true, batch:1, current:null, batchResults:[], ocrPosMap:{} };
+const state = { city:'A', type:'blue', mode:'pick', smart:true, batch:1, current:null, batchResults:[], ocrPosMap:{}, expandedIndex:0 };
 
 const $ = id => document.getElementById(id);
 const citySelect = $('citySelect'), typeSeg = $('typeSeg'), modeSeg = $('modeSeg'),
@@ -715,7 +753,7 @@ const citySelect = $('citySelect'), typeSeg = $('typeSeg'), modeSeg = $('modeSeg
   smartToggle = $('smartToggle'), batchSelect = $('batchSelect'), btnPick = $('btnPick'),
   manualLabel = $('manualLabel'), manualInput = $('manualInput'), btnTest = $('btnTest'), greenWarn = $('greenWarn'),
   plateZone = $('plateZone'), resultBody = $('resultBody'), ringFg = $('ringFg'),
-  rankCode = $('rankCode'), beatLine = $('beatLine'), gradeChip = $('gradeChip'), verdictEl = $('verdict'), reasonList = $('reasonList'),
+  rankCode = $('rankCode'), beatLine = $('beatLine'), gradeChip = $('gradeChip'), verdictEl = $('verdict'), reasonList = $('reasonList'), reasonWrap = $('reasonWrap'),
   batchPanel = $('batchPanel'), batchList = $('batchList'), btnClear = $('btnClear');
 
 CITIES.forEach(c=>{
@@ -789,6 +827,13 @@ function fmtDelta(d){
   if(d < 0) return ''+d;
   return '0';
 }
+function reasonRowsHTML(reasons){
+  return reasons.map(r=>{
+    const cls = r.delta>0 ? 'g' : (r.delta<0 ? 'b' : 'z');
+    return '<div class="rrow"><span class="rtag">'+r.tag+'</span><span class="rdesc">'+r.desc
+      +'</span><span class="rdelta '+cls+'">'+fmtDelta(r.delta)+'</span></div>';
+  }).join('');
+}
 
 function renderResult(a, animate){
   state.current = a;
@@ -822,11 +867,13 @@ function renderResult(a, animate){
 
   verdictEl.textContent = rk.note;
 
-  reasonList.innerHTML = a.reasons.map(r=>{
-    const cls = r.delta>0 ? 'g' : (r.delta<0 ? 'b' : 'z');
-    return '<div class="rrow"><span class="rtag">'+r.tag+'</span><span class="rdesc">'+r.desc
-      +'</span><span class="rdelta '+cls+'">'+fmtDelta(r.delta)+'</span></div>';
-  }).join('');
+  const inBatch = state.batchResults.indexOf(a) >= 0;
+  if(inBatch){
+    reasonWrap.style.display = 'none';
+  } else {
+    reasonWrap.style.display = '';
+    reasonList.innerHTML = reasonRowsHTML(a.reasons);
+  }
 
   highlightBatchActive();
 }
@@ -835,25 +882,30 @@ function renderResult(a, animate){
 function renderBatch(){
   if(!state.batchResults.length){ batchPanel.style.display = 'none'; return; }
   batchPanel.style.display = '';
+  if(state.expandedIndex >= state.batchResults.length) state.expandedIndex = 0;
   batchList.innerHTML = state.batchResults.map((a,i)=>{
     if(!a.rank) decorate(a, a.type || state.type);
-    const active = state.current && state.current === a ? ' active' : '';
     const t = a.type || state.type;
-    return '<div class="brow'+active+'" data-i="'+i+'">'
-      + '<span class="brank">'+(i+1)+'</span>'
-      + '<span class="plate mini '+t+'">'+plateHTML(a.body, t)+'</span>'
-      + (i===0 ? '<span class="rec">推荐</span>' : '')
-      + '<span class="bbar"><i style="width:'+a.beat.toFixed(1)+'%"></i></span>'
-      + '<span class="bbeat">超越 '+fmtBeat(a.beat)+'%</span>'
-      + '<span class="bgrade grade '+a.rank.cls+'">'+a.rank.code+'</span>'
+    const open = i === state.expandedIndex ? ' open' : '';
+    return '<div class="acard'+open+'" data-i="'+i+'">'
+      + '<div class="ahead">'
+      +   '<span class="brank">'+(i+1)+'</span>'
+      +   '<span class="plate mini '+t+'">'+plateHTML(a.body, t)+'</span>'
+      +   (i===0 ? '<span class="rec">推荐</span>' : '')
+      +   '<span class="aspacer"></span>'
+      +   '<span class="bgrade grade '+a.rank.cls+'">'+a.rank.code+'</span>'
+      +   '<span class="bbeat">超越 '+fmtBeat(a.beat)+'%</span>'
+      +   '<svg class="achev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
+      + '</div>'
+      + '<div class="abody">'
+      +   '<div class="averdict">'+a.rank.note+'</div>'
+      +   '<div class="areasons">'+reasonRowsHTML(a.reasons)+'</div>'
+      + '</div>'
       + '</div>';
   }).join('');
 }
 function highlightBatchActive(){
-  batchList.querySelectorAll('.brow').forEach(row=>{
-    const a = state.batchResults[+row.dataset.i];
-    row.classList.toggle('active', !!state.current && a === state.current);
-  });
+  /* 手风琴以 .open 标记当前选中项，展开状态由 state.expandedIndex 驱动 */
 }
 
 /* ================= 事件 ================= */
@@ -891,6 +943,8 @@ btnPick.addEventListener('click', ()=>{
   const n = state.batch;
   const results = [];
   if(n === 1){
+    state.batchResults = [];
+    renderBatch();
     const a = state.smart ? smartPick(state.type) : analyze(genBody(state.type, false));
     renderResult(decorate(a, state.type), true);
     return;
@@ -909,6 +963,7 @@ btnPick.addEventListener('click', ()=>{
   }
   results.sort((a,b)=>b.score - a.score);
   state.batchResults = results;
+  state.expandedIndex = 0;
   renderBatch();
   renderResult(results[0], true);
 });
@@ -921,10 +976,16 @@ btnClear.addEventListener('click', ()=>{
   renderBatch();
 });
 batchList.addEventListener('click', e=>{
-  const row = e.target.closest('.brow');
-  if(!row) return;
-  const a = state.batchResults[+row.dataset.i];
-  if(a) renderResult(a, true);
+  const head = e.target.closest('.ahead');
+  if(!head) return;
+  const card = head.closest('.acard');
+  if(!card) return;
+  const i = +card.dataset.i;
+  const a = state.batchResults[i];
+  if(!a) return;
+  state.expandedIndex = i;
+  renderBatch();
+  renderResult(a, false);
 });
 
 /* ================= 图片选号（本机 OCR） ================= */
@@ -1128,14 +1189,18 @@ function drawTag(ctx, box, text, color, W, order){
   ctx.fillText(text, tx + 18, ty + h/2 + 0.5);
   ctx.restore();
 }
-function annotateImage(){
-  const cv = $('ocrCanvas');
+function hexToRgba(hex, a){
+  const h = String(hex).replace('#','');
+  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';
+}
+/* 把前 5 名的圈选 + 标注画到指定画布（半透明，不遮挡相邻号牌） */
+function paintAnnotations(cv, imgEl){
   const posMap = state.ocrPosMap || {};
   const top = state.batchResults.slice(0, 5);
   const targets = top.filter(a=>posMap[a.body]);
-  if(!targets.length){ cv.style.display = 'none'; return; }
-  const dispW = ocrPreview.clientWidth, dispH = ocrPreview.clientHeight;
-  if(!dispW || !dispH){ cv.style.display = 'none'; return; }
+  const dispW = imgEl.clientWidth, dispH = imgEl.clientHeight;
+  if(!targets.length || !dispW || !dispH){ cv.style.display = 'none'; return; }
   const dpr = window.devicePixelRatio || 1;
   cv.width = Math.round(dispW*dpr);
   cv.height = Math.round(dispH*dpr);
@@ -1151,22 +1216,47 @@ function annotateImage(){
     const cx = (x0+x1)/2, cy = (y0+y1)/2;
     const rx = (x1-x0)/2 + 6, ry = (y1-y0)/2 + 6;
     const color = (a.rank && a.rank.color) || '#a78bfa';
-    ctx.save();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 8;
+    ctx.fillStyle = hexToRgba(color, 0.16);
+    ctx.strokeStyle = hexToRgba(color, 0.85);
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+    ctx.fill();
     ctx.stroke();
-    ctx.restore();
     const label = a.body + ' · ' + ((a.rank && a.rank.code) || '');
     drawTag(ctx, {x0:x0-rx, x1:x1+rx, y0:y0-ry, y1:y1+ry}, label, color, dispW, order);
   });
   cv.style.display = 'block';
 }
+function annotateImage(){ paintAnnotations($('ocrCanvas'), ocrPreview); }
+
+/* 点击放大：在大图上重绘同样的圈选标注 */
+function openLightbox(){
+  const lb = $('ocrLightbox'), lbImg = $('lbImg'), lbCanvas = $('lbCanvas');
+  lb.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  const paint = ()=>requestAnimationFrame(()=>paintAnnotations(lbCanvas, lbImg));
+  lbImg.onload = paint;
+  lbImg.src = ocrPreview.src;
+  if(lbImg.complete && lbImg.naturalWidth) paint();
+}
+function closeLightbox(){
+  $('ocrLightbox').style.display = 'none';
+  document.body.style.overflow = '';
+}
+$('ocrPreviewWrap').addEventListener('click', ()=>{
+  if($('ocrPreviewWrap').style.display !== 'none') openLightbox();
+});
+$('ocrLightbox').addEventListener('click', e=>{
+  if(e.target === $('ocrLightbox') || e.target.closest('.lb-close')) closeLightbox();
+});
+document.addEventListener('keydown', e=>{ if(e.key === 'Escape') closeLightbox(); });
+
 window.addEventListener('resize', ()=>{
-  if(state.batchResults.length && Object.keys(state.ocrPosMap||{}).length) annotateImage();
+  if(state.batchResults.length && Object.keys(state.ocrPosMap||{}).length){
+    annotateImage();
+    if($('ocrLightbox').style.display !== 'none') paintAnnotations($('lbCanvas'), $('lbImg'));
+  }
 });
 
 dropzone.addEventListener('click', ()=>fileInput.click());
@@ -1205,6 +1295,7 @@ btnRank.addEventListener('click', ()=>{
   const uniq = [...new Set(tokens)];
   const results = uniq.map(b=>decorate(analyze(b), state.type)).sort((a,b)=>b.score - a.score);
   state.batchResults = results.slice(0, 5);
+  state.expandedIndex = 0;
   renderBatch();
   renderResult(results[0], true);
   annotateImage();
@@ -1229,6 +1320,8 @@ manualInput.addEventListener('keydown', e=>{
 btnTest.addEventListener('click', ()=>{
   const body = manualInput.value;
   if(body.length !== (state.type==='blue'?5:6)) return;
+  state.batchResults = [];
+  renderBatch();
   renderResult(decorate(analyze(body), state.type), true);
 });
 validateManual();
