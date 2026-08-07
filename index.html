@@ -138,24 +138,24 @@
     border:1.5px dashed var(--border-strong);color:var(--muted);font-size:13px;letter-spacing:2px}
   .plate-caption{margin-top:14px;font-size:12px;color:var(--muted);letter-spacing:2px}
 
-  .score-zone{display:flex;flex-direction:column;align-items:center;padding:24px 16px 20px;
-    border-top:1px solid var(--border);position:relative;
-    background:radial-gradient(ellipse 70% 60% at 50% 30%, rgba(139,92,246,.06), transparent 70%)}
-  .ring-box{position:relative;width:140px;height:140px;flex:none}
-  .ring-box::before{content:"";position:absolute;inset:12px;border-radius:50%;
-    background:radial-gradient(circle, rgba(139,92,246,.08) 0%, transparent 70%)}
-  .ring-box svg{width:140px;height:140px;transform:rotate(-90deg)}
+  .score-zone{display:flex;align-items:center;gap:24px;padding:20px 8px 16px;border-top:1px solid var(--border);
+    position:relative;background:radial-gradient(ellipse 80% 70% at 25% 50%, rgba(139,92,246,.04), transparent 70%)}
+  .score-left{display:flex;flex-direction:column;align-items:center;flex:none}
+  .ring-box{position:relative;width:116px;height:116px}
+  .ring-box::before{content:"";position:absolute;inset:10px;border-radius:50%;
+    background:radial-gradient(circle, rgba(139,92,246,.06) 0%, transparent 70%)}
+  .ring-box svg{width:116px;height:116px;transform:rotate(-90deg)}
   .ring-bg{fill:none;stroke:#1e1d28;stroke-width:8}
   .ring-fg{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;
     stroke-dasharray:326.7;stroke-dashoffset:326.7;transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1), stroke .4s;
-    filter:drop-shadow(0 0 6px currentColor)}
+    filter:drop-shadow(0 0 5px currentColor)}
   .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-  .ring-num b{font-size:38px;font-weight:800;letter-spacing:2px;transition:color .4s}
-  .beat-line{font-size:12px;color:var(--muted);margin-top:8px;letter-spacing:1px;text-align:center}
-  .score-side{flex:1;min-width:0;text-align:center;margin-top:16px}
-  .score-divider{width:48px;height:1px;margin:14px auto 0;
-    background:linear-gradient(90deg,transparent,rgba(245,196,81,.3),transparent)}
-  .verdict{font-size:13px;color:var(--muted);line-height:1.9;margin-top:10px;letter-spacing:.3px}
+  .ring-num b{font-size:34px;font-weight:800;letter-spacing:2px;transition:color .4s}
+  .beat-line{font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:.5px;white-space:nowrap}
+  .score-side{flex:1;min-width:0;padding-top:4px}
+  .score-divider{width:36px;height:1px;margin:12px 0;
+    background:linear-gradient(90deg,rgba(245,196,81,.35),transparent)}
+  .verdict{font-size:13px;color:var(--muted);line-height:1.8;letter-spacing:.3px}
 
   .grade{display:inline-flex;padding:7px 16px;border-radius:999px;font-weight:700;font-size:14px;letter-spacing:2px}
   .rk-gold{background:linear-gradient(135deg,#f7d774 0%,#e8a93d 50%,#f5c451 100%);color:#3a2a05;
@@ -362,14 +362,16 @@
       </div>
       <div id="resultBody" style="display:none">
         <div class="score-zone">
-          <div class="ring-box">
-            <svg viewBox="0 0 132 132">
-              <circle class="ring-bg" cx="66" cy="66" r="52"></circle>
-              <circle class="ring-fg" id="ringFg" cx="66" cy="66" r="52"></circle>
-            </svg>
-            <div class="ring-num"><b id="rankCode">--</b></div>
+          <div class="score-left">
+            <div class="ring-box">
+              <svg viewBox="0 0 132 132">
+                <circle class="ring-bg" cx="66" cy="66" r="52"></circle>
+                <circle class="ring-fg" id="ringFg" cx="66" cy="66" r="52"></circle>
+              </svg>
+              <div class="ring-num"><b id="rankCode">--</b></div>
+            </div>
+            <div class="beat-line" id="beatLine">等待测算</div>
           </div>
-          <div class="beat-line" id="beatLine">等待测算</div>
           <div class="score-side">
             <span class="grade" id="gradeChip">--</span>
             <div class="score-divider"></div>
