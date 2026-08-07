@@ -162,7 +162,10 @@
   .dropzone:hover,.dropzone.drag{border-color:rgba(139,92,246,.6);background:rgba(139,92,246,.07)}
   .dz-t{font-size:13px;font-weight:600;margin-top:10px;letter-spacing:1px}
   .dz-d{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.7}
-  #ocrPreview{display:block;max-width:100%;max-height:180px;border-radius:10px;border:1px solid var(--border);margin-bottom:14px}
+  #ocrPreviewWrap{position:relative;display:inline-block;max-width:100%;margin-bottom:14px;
+    border-radius:10px;border:1px solid var(--border);overflow:hidden;line-height:0}
+  #ocrPreview{display:block;max-width:100%;max-height:320px}
+  #ocrCanvas{position:absolute;left:0;top:0;pointer-events:none}
   .pbar{height:6px;background:#1d1d27;border-radius:99px;overflow:hidden;margin-bottom:8px}
   .pbar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width .25s}
   .ptext{font-size:12px;color:var(--muted);margin-bottom:14px;letter-spacing:.5px}
@@ -263,7 +266,10 @@
           <div class="dz-d">也可直接在本页 Ctrl+V 粘贴截图</div>
         </div>
         <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/bmp" style="display:none">
-        <img id="ocrPreview" alt="截图预览" style="display:none">
+        <div id="ocrPreviewWrap" style="display:none">
+          <img id="ocrPreview" alt="截图预览">
+          <canvas id="ocrCanvas"></canvas>
+        </div>
         <div class="pbar" id="ocrBar" style="display:none"><i id="ocrBarFill"></i></div>
         <div class="ptext" id="ocrStatus"></div>
         <div class="field">
@@ -698,7 +704,7 @@ function smartPick(type){
 }
 
 /* ================= 状态与 DOM ================= */
-const state = { city:'A', type:'blue', mode:'pick', smart:true, batch:1, current:null, batchResults:[] };
+const state = { city:'A', type:'blue', mode:'pick', smart:true, batch:1, current:null, batchResults:[], ocrPosMap:{} };
 
 const $ = id => document.getElementById(id);
 const citySelect = $('citySelect'), typeSeg = $('typeSeg'), modeSeg = $('modeSeg'),
@@ -1008,6 +1014,31 @@ function extractCandidates(text){
   return out.slice(0, 60);
 }
 
+/* 词级提取：在 extractCandidates 规则基础上保留每个候选在原图中的归一化位置（bbox / 源图宽高），
+   供排序后在截图上圈选标注使用 */
+function extractCandidatesWithPos(words, srcW, srcH){
+  const len = state.type === 'blue' ? 5 : 6;
+  const seen = new Set(), out = [];
+  const valid = s => /^[0-9A-HJ-NP-Z]+$/.test(s) && (s.match(/[0-9]/g) || []).length >= 2;
+  for(const w of words){
+    const runs = normPlate(w.text || '').match(/[0-9A-Z]{4,}/g) || [];
+    if(!runs.length || !w.bbox) continue;
+    const b = w.bbox;
+    const push = s => {
+      if(valid(s) && !seen.has(s)){
+        seen.add(s);
+        out.push({ body:s, fx0:b.x0/srcW, fy0:b.y0/srcH, fx1:b.x1/srcW, fy1:b.y1/srcH });
+      }
+    };
+    for(const run of runs){
+      if(run.length === len) push(run);
+      else if(run.length === len + 1 && /[A-Z]/.test(run[0])) push(run.slice(1));
+      else if(run.length > len + 1 && /[A-Z]/.test(run[run.length - len - 1])) push(run.slice(-len));
+    }
+  }
+  return out.slice(0, 60);
+}
+
 let ocrBusy = false;
 async function handleImage(file){
   if(ocrBusy) return;
@@ -1020,20 +1051,29 @@ async function handleImage(file){
   ocrError.style.display = 'none';
   btnRank.disabled = true;
   const url = URL.createObjectURL(file);
-  ocrPreview.src = url; ocrPreview.style.display = '';
+  ocrPreview.src = url;
+  $('ocrPreviewWrap').style.display = '';
+  $('ocrCanvas').style.display = 'none';
   ocrBar.style.display = ''; ocrBarFill.style.width = '2%';
   ocrStatus.textContent = '准备中…';
   try{
     const worker = await getOcrWorker();
     const img = await loadImageEl(url);
-    const { data } = await worker.recognize(upscale(img));
-    const cands = extractCandidates(data.text);
+    const src = upscale(img);
+    const srcW = src.naturalWidth || src.width;
+    const srcH = src.naturalHeight || src.height;
+    const { data } = await worker.recognize(src);
+    let cands = (data.words && data.words.length) ? extractCandidatesWithPos(data.words, srcW, srcH) : [];
+    if(!cands.length && data.text) cands = extractCandidates(data.text).map(b=>({ body:b }));
     if(cands.length){
-      candArea.value = cands.join('\n');
+      state.ocrPosMap = {};
+      cands.forEach(c=>{ if(c.fx0 !== undefined) state.ocrPosMap[c.body] = {fx0:c.fx0, fy0:c.fy0, fx1:c.fx1, fy1:c.fy1}; });
+      candArea.value = cands.map(c=>c.body).join('\n');
       ocrStatus.textContent = '识别完成，共 ' + cands.length + ' 个候选号码，请校对后排序';
       ocrBarFill.style.width = '100%';
     } else {
       candArea.value = '';
+      state.ocrPosMap = {};
       ocrStatus.textContent = '未识别到符合规则的号码，可更换更清晰的截图，或在上方手动粘贴号码';
     }
   }catch(err){
@@ -1045,6 +1085,89 @@ async function handleImage(file){
   ocrBusy = false;
   btnRank.disabled = candArea.value.trim() === '';
 }
+
+/* 在截图上圈出高分号码并侧边标注 */
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+function drawTag(ctx, box, text, color, W, order){
+  ctx.save();
+  ctx.font = '600 11px "Inter","Microsoft YaHei",sans-serif';
+  const padX = 7, h = 18;
+  const tw = ctx.measureText(text).width;
+  const w = tw + padX*2 + 16; /* 16 留给序号小圆 */
+  const gap = 7;
+  let tx = box.x1 + gap;
+  if(tx + w > W - 2) tx = box.x0 - gap - w; /* 右侧放不下则翻到左侧 */
+  if(tx < 2) tx = Math.max(2, (box.x0+box.x1)/2 - w/2);
+  const ty = Math.max(2, box.y0 + (box.y1-box.y0)/2 - h/2);
+  ctx.fillStyle = 'rgba(16,16,22,.92)';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  roundRect(ctx, tx, ty, w, h, 9);
+  ctx.fill(); ctx.stroke();
+  /* 序号小圆 */
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(tx + 9, ty + h/2, 6, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#0a0a0e';
+  ctx.font = '700 9px "Inter","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(order), tx + 9, ty + h/2 + 0.5);
+  /* 号码 + 段位 */
+  ctx.fillStyle = '#ececf1';
+  ctx.font = '600 11px "Inter","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(text, tx + 18, ty + h/2 + 0.5);
+  ctx.restore();
+}
+function annotateImage(){
+  const cv = $('ocrCanvas');
+  const posMap = state.ocrPosMap || {};
+  const top = state.batchResults.slice(0, 5);
+  const targets = top.filter(a=>posMap[a.body]);
+  if(!targets.length){ cv.style.display = 'none'; return; }
+  const dispW = ocrPreview.clientWidth, dispH = ocrPreview.clientHeight;
+  if(!dispW || !dispH){ cv.style.display = 'none'; return; }
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(dispW*dpr);
+  cv.height = Math.round(dispH*dpr);
+  cv.style.width = dispW + 'px';
+  cv.style.height = dispH + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, dispW, dispH);
+  targets.forEach((a)=>{
+    const order = top.indexOf(a) + 1;
+    const p = posMap[a.body];
+    const x0 = p.fx0*dispW, y0 = p.fy0*dispH, x1 = p.fx1*dispW, y1 = p.fy1*dispH;
+    const cx = (x0+x1)/2, cy = (y0+y1)/2;
+    const rx = (x1-x0)/2 + 6, ry = (y1-y0)/2 + 6;
+    const color = (a.rank && a.rank.color) || '#a78bfa';
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+    const label = a.body + ' · ' + ((a.rank && a.rank.code) || '');
+    drawTag(ctx, {x0:x0-rx, x1:x1+rx, y0:y0-ry, y1:y1+ry}, label, color, dispW, order);
+  });
+  cv.style.display = 'block';
+}
+window.addEventListener('resize', ()=>{
+  if(state.batchResults.length && Object.keys(state.ocrPosMap||{}).length) annotateImage();
+});
 
 dropzone.addEventListener('click', ()=>fileInput.click());
 fileInput.addEventListener('change', ()=>{
@@ -1081,9 +1204,10 @@ btnRank.addEventListener('click', ()=>{
   ocrError.style.display = 'none';
   const uniq = [...new Set(tokens)];
   const results = uniq.map(b=>decorate(analyze(b), state.type)).sort((a,b)=>b.score - a.score);
-  state.batchResults = results;
+  state.batchResults = results.slice(0, 5);
   renderBatch();
   renderResult(results[0], true);
+  annotateImage();
 });
 
 function validateManual(){
