@@ -556,19 +556,19 @@ function straightLen(s){
 
 /* 评级表：内部展示分 → 段位（SR 为最高） */
 const RANKS = [
-  {code:'SR',  min:95, name:'天选之号', cls:'rk-gold',   color:'#f5c451',
+  {code:'SR',  min:92, name:'天选之号', cls:'rk-gold',   color:'#f5c451',
     note:'万里挑一的天选靓号，凌驾于几乎全部随机号码之上，若被选中请务必珍惜。'},
-  {code:'SSS', min:88, name:'极品靓号', cls:'rk-gold',   color:'#f5c451',
+  {code:'SSS', min:84, name:'极品靓号', cls:'rk-gold',   color:'#f5c451',
     note:'可遇不可求的极品靓号，数字组合堪称完美，放心拿下。'},
-  {code:'SS',  min:80, name:'臻选之号', cls:'rk-purple', color:'#c4b5fd',
+  {code:'SS',  min:76, name:'臻选之号', cls:'rk-purple', color:'#c4b5fd',
     note:'极为难得的臻选之号，寓意出众，值得果断锁定。'},
-  {code:'S',   min:70, name:'优选好号', cls:'rk-purple', color:'#c4b5fd',
+  {code:'S',   min:68, name:'优选好号', cls:'rk-purple', color:'#c4b5fd',
     note:'百里挑一的优选好号，整体格局上佳，可以放心选择。'},
   {code:'A',   min:60, name:'上等号码', cls:'rk-green',  color:'#6ee7b7',
     note:'上等之选，整体寓意向好，值得纳入首选范围。'},
-  {code:'B',   min:50, name:'吉利号码', cls:'rk-teal',   color:'#5eead4',
+  {code:'B',   min:52, name:'吉利号码', cls:'rk-teal',   color:'#5eead4',
     note:'整体优于大多数随机号码，寓意平稳向好，可以考虑。'},
-  {code:'C',   min:35, name:'中平号码', cls:'rk-blue',   color:'#93c5fd',
+  {code:'C',   min:30, name:'中平号码', cls:'rk-blue',   color:'#93c5fd',
     note:'无明显吉凶特征，无功无过，随缘即可。'},
   {code:'D',   min:0,  name:'普通号码', cls:'rk-gray',   color:'#b6c2d6',
     note:'表现略逊于多数号码，若有更好选择可再挑选。'}
@@ -611,7 +611,7 @@ function mapFinal(raw){
   if(raw <= 40){
     return Math.max(2, Math.round(40 + (raw - 40) * 0.8));
   }
-  const v = 40 + 60 * Math.sqrt((raw - 40) / 420);
+  const v = 40 + 60 * Math.sqrt((raw - 40) / 500);
   return Math.min(100, Math.round(v));
 }
 
@@ -770,7 +770,7 @@ function genBody(type, bias){
 }
 function smartPick(type){
   let best = null;
-  for(let i=0;i<30;i++){
+  for(let i=0;i<20;i++){
     const a = analyze(genBody(type, false));
     if(!best || a.score > best.score) best = a;
   }
