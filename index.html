@@ -302,7 +302,7 @@
           <textarea id="candArea" rows="7" placeholder="识别出的号码会列在这里，也可以直接粘贴号码，每行一个&#10;例如：&#10;88A88&#10;16816&#10;D66668"></textarea>
         </div>
         <button class="btn-primary" id="btnRank" disabled>开始评估排序</button>
-        <div class="hint">识别全程在本机浏览器内完成，图片不会上传到任何服务器；如有识别偏差，直接修改后再排序即可。</div>
+        <div class="hint">识别全程在本机浏览器内完成，图片不会上传到任何服务器；5 / S 等易混字符会自动逐字复核，如仍有偏差，直接修改后再排序即可。</div>
         <div class="warn" id="ocrError"></div>
       </div>
 
@@ -1076,28 +1076,163 @@ function extractCandidates(text){
 }
 
 /* 词级提取：在 extractCandidates 规则基础上保留每个候选在原图中的归一化位置（bbox / 源图宽高），
-   供排序后在截图上圈选标注使用 */
+   以及来源词信息（wordRef），供排序后圈选标注与逐字精校使用 */
 function extractCandidatesWithPos(words, srcW, srcH){
   const len = state.type === 'blue' ? 5 : 6;
   const seen = new Set(), out = [];
   const valid = s => /^[0-9A-HJ-NP-Z]+$/.test(s) && (s.match(/[0-9]/g) || []).length >= 2;
   for(const w of words){
-    const runs = normPlate(w.text || '').match(/[0-9A-Z]{4,}/g) || [];
-    if(!runs.length || !w.bbox) continue;
+    const text = w.text || '';
+    const norm = normPlate(text);
+    if(!norm || !w.bbox) continue;
     const b = w.bbox;
-    const push = s => {
-      if(valid(s) && !seen.has(s)){
-        seen.add(s);
-        out.push({ body:s, fx0:b.x0/srcW, fy0:b.y0/srcH, fx1:b.x1/srcW, fy1:b.y1/srcH });
+    const syms = (w.symbols && w.symbols.length === text.length) ? w.symbols : null;
+    const re = /[0-9A-Z]{4,}/g;
+    let m;
+    while((m = re.exec(norm))){
+      const run = m[0], base = m.index;
+      const variants = [];
+      if(run.length === len) variants.push({ s:run, off:base });
+      else if(run.length === len + 1 && /[A-Z]/.test(run[0])) variants.push({ s:run.slice(1), off:base + 1 });
+      else if(run.length > len + 1 && /[A-Z]/.test(run[run.length - len - 1])) variants.push({ s:run.slice(-len), off:base + run.length - len });
+      for(const v of variants){
+        if(valid(v.s) && !seen.has(v.s)){
+          seen.add(v.s);
+          out.push({
+            body:v.s,
+            fx0:b.x0/srcW, fy0:b.y0/srcH, fx1:b.x1/srcW, fy1:b.y1/srcH,
+            wordRef:{ text, bbox:b, off:v.off, syms }
+          });
+        }
       }
-    };
-    for(const run of runs){
-      if(run.length === len) push(run);
-      else if(run.length === len + 1 && /[A-Z]/.test(run[0])) push(run.slice(1));
-      else if(run.length > len + 1 && /[A-Z]/.test(run[run.length - len - 1])) push(run.slice(-len));
     }
   }
   return out.slice(0, 60);
+}
+
+/* ---------- 易混字符逐字精校（5/S 等） ---------- */
+const SUSPECT_CHARS = ['5','S'];
+const PLATE_WHITELIST = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const MAX_REFINE_JOBS = 28;
+
+/* 候选第 i 个字符在源图中的 bbox：优先用 Tesseract 符号级 bbox，否则按词宽均分估算 */
+function charBoxes(cand){
+  const ref = cand.wordRef;
+  if(!ref || !ref.text.length) return null;
+  const b = ref.bbox, n = ref.text.length, boxes = [];
+  for(let i = 0; i < cand.body.length; i++){
+    const ci = ref.off + i;
+    const sb = ref.syms && ref.syms[ci] && ref.syms[ci].bbox;
+    if(sb){ boxes.push({ x0:sb.x0, y0:sb.y0, x1:sb.x1, y1:sb.y1 }); }
+    else {
+      const cw = (b.x1 - b.x0) / n;
+      boxes.push({ x0:b.x0 + ci*cw, y0:b.y0, x1:b.x0 + (ci+1)*cw, y1:b.y1 });
+    }
+  }
+  return boxes;
+}
+
+/* 裁剪单个字符并放大，深底浅字自动反色为白底黑字（Tesseract 更擅长） */
+function makeCharCrop(src, box, srcW, srcH){
+  const bw = box.x1 - box.x0, bh = box.y1 - box.y0;
+  if(bw < 3 || bh < 3) return null;
+  const padX = Math.max(2, bw * 0.28), padY = Math.max(2, bh * 0.22);
+  const sx0 = Math.max(0, Math.round(box.x0 - padX));
+  const sy0 = Math.max(0, Math.round(box.y0 - padY));
+  const sx1 = Math.min(srcW, Math.round(box.x1 + padX));
+  const sy1 = Math.min(srcH, Math.round(box.y1 + padY));
+  const cw = sx1 - sx0, ch = sy1 - sy0;
+  if(cw < 6 || ch < 6) return null;
+  const scale = Math.max(1, Math.min(6, 96 / ch));
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(cw * scale); cv.height = Math.round(ch * scale);
+  const ctx = cv.getContext('2d');
+  ctx.drawImage(src, sx0, sy0, cw, ch, 0, 0, cv.width, cv.height);
+  const d = ctx.getImageData(0, 0, cv.width, cv.height);
+  const px = d.data;
+  let sum = 0, cnt = 0;
+  for(let i = 0; i < px.length; i += 16){ sum += px[i]*0.299 + px[i+1]*0.587 + px[i+2]*0.114; cnt++; }
+  if(cnt && sum / cnt < 120){
+    for(let i = 0; i < px.length; i += 4){ px[i] = 255 - px[i]; px[i+1] = 255 - px[i+1]; px[i+2] = 255 - px[i+2]; }
+    ctx.putImageData(d, 0, 0);
+  }
+  return cv;
+}
+
+/* 字形仲裁 5/S：「5」的顶横伸到最左，「S」的顶弧不贴左上角。
+   统计左上区域（高 28% × 宽 32%）墨迹占比，高→5，低→S，中间地带返回 null。
+   入参画布需已反色为白底黑字 */
+function guessFiveOrS(cv){
+  const ctx = cv.getContext('2d');
+  const w = cv.width, h = cv.height;
+  const d = ctx.getImageData(0, 0, w, h).data;
+  const rw = Math.max(2, Math.floor(w * 0.32)), rh = Math.max(2, Math.floor(h * 0.28));
+  let ink = 0;
+  for(let y = 0; y < rh; y++){
+    for(let x = 0; x < rw; x++){
+      const i = (y * w + x) * 4;
+      if(d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114 < 128) ink++;
+    }
+  }
+  const ratio = ink / (rw * rh);
+  if(ratio >= 0.25) return '5';
+  if(ratio <= 0.10) return 'S';
+  return null;
+}
+
+/* 精校决策：oc=原字符，cropChar/cropConf=单字重识别结果，pix=字形仲裁（可为 null） */
+function decideSuspectChar(oc, cropChar, cropConf, pix){
+  if(!cropChar) return oc;
+  if(pix === null) return (cropChar !== oc && cropConf >= 60) ? cropChar : oc;
+  if(pix === oc) return oc;
+  if(cropChar === pix && cropConf >= 50) return pix;
+  if(cropConf >= 82) return cropChar;
+  return oc;
+}
+
+function dedupeCands(cands){
+  const seen = new Set(), out = [];
+  for(const c of cands){ if(!seen.has(c.body)){ seen.add(c.body); out.push(c); } }
+  return out;
+}
+
+async function refineSuspects(worker, src, srcW, srcH, cands){
+  const jobs = [];
+  for(const c of cands){
+    for(let i = 0; i < c.body.length; i++){
+      if(SUSPECT_CHARS.indexOf(c.body[i]) >= 0) jobs.push({ c, i });
+    }
+  }
+  if(!jobs.length) return 0;
+  const list = jobs.slice(0, MAX_REFINE_JOBS);
+  let changed = 0;
+  try{
+    await worker.setParameters({ tessedit_pageseg_mode:'10', tessedit_char_whitelist:PLATE_WHITELIST });
+    for(let k = 0; k < list.length; k++){
+      const { c, i } = list[k];
+      ocrStatus.textContent = '正在逐字复核易混字符（' + (k+1) + '/' + list.length + '）…';
+      const boxes = charBoxes(c);
+      if(!boxes || !boxes[i]) continue;
+      const crop = makeCharCrop(src, boxes[i], srcW, srcH);
+      if(!crop) continue;
+      const oc = c.body[i];
+      const pix = (oc === '5' || oc === 'S') ? guessFiveOrS(crop) : null;
+      let ch = oc;
+      try{
+        const { data } = await worker.recognize(crop);
+        const t = normPlate((data.text || '').replace(/\s+/g, ''));
+        const cc = t.match(/[0-9A-HJ-NP-Z]/);
+        ch = decideSuspectChar(oc, cc ? cc[0] : null, data.confidence || 0, pix);
+      }catch(e){ ch = oc; }
+      if(ch !== oc){
+        const body = c.body.slice(0, i) + ch + c.body.slice(i+1);
+        if((body.match(/[0-9]/g) || []).length >= 2){ c.body = body; changed++; }
+      }
+    }
+  }finally{
+    try{ await worker.setParameters({ tessedit_pageseg_mode:'3', tessedit_char_whitelist:'' }); }catch(e){}
+  }
+  return changed;
 }
 
 let ocrBusy = false;
@@ -1127,10 +1262,17 @@ async function handleImage(file){
     let cands = (data.words && data.words.length) ? extractCandidatesWithPos(data.words, srcW, srcH) : [];
     if(!cands.length && data.text) cands = extractCandidates(data.text).map(b=>({ body:b }));
     if(cands.length){
+      let fixed = 0;
+      if(cands[0].wordRef){
+        ocrBarFill.style.width = '86%';
+        fixed = await refineSuspects(worker, src, srcW, srcH, cands);
+        if(fixed) cands = dedupeCands(cands);
+        ocrBarFill.style.width = '98%';
+      }
       state.ocrPosMap = {};
       cands.forEach(c=>{ if(c.fx0 !== undefined) state.ocrPosMap[c.body] = {fx0:c.fx0, fy0:c.fy0, fx1:c.fx1, fy1:c.fy1}; });
       candArea.value = cands.map(c=>c.body).join('\n');
-      ocrStatus.textContent = '识别完成，共 ' + cands.length + ' 个候选号码，请校对后排序';
+      ocrStatus.textContent = '识别完成，共 ' + cands.length + ' 个候选号码' + (fixed ? '（已自动复核修正 ' + fixed + ' 处易混字符）' : '') + '，请校对后排序';
       ocrBarFill.style.width = '100%';
     } else {
       candArea.value = '';
