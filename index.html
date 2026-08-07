@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>苏牌甄选 · 江苏车牌号码吉凶甄选</title>
+<style>
+  :root{
+    --bg:#08080c;
+    --panel:#101016;
+    --panel-2:#15151d;
+    --field:#0c0c12;
+    --border:rgba(255,255,255,.07);
+    --border-strong:rgba(255,255,255,.14);
+    --text:#ececf1;
+    --muted:#8b8b99;
+    --accent:#8b5cf6;
+    --accent-2:#a78bfa;
+    --accent-soft:rgba(139,92,246,.14);
+    --good:#34d399;
+    --bad:#f87171;
+    --gold:#f5c451;
+    --radius:16px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{color-scheme:dark}
+  body{
+    background:var(--bg);color:var(--text);min-height:100vh;
+    font-family:"Inter","HarmonyOS Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .glow{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(640px 320px at 18% -6%, rgba(124,58,237,.16), transparent 70%),
+      radial-gradient(520px 300px at 86% -2%, rgba(59,130,246,.08), transparent 70%);
+  }
+  .wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:30px 20px 56px}
+
+  /* ===== header ===== */
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#7c3aed,#8b5cf6 60%,#a78bfa);
+    font-size:24px;font-weight:800;color:#fff;letter-spacing:0;
+    box-shadow:0 6px 22px rgba(124,58,237,.35)}
+  .brand h1{font-size:20px;font-weight:700;letter-spacing:1px}
+  .brand p{font-size:12px;color:var(--muted);margin-top:3px;letter-spacing:.5px}
+  .head-badge{font-size:12px;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:6px 12px;background:var(--panel)}
+
+  /* ===== layout ===== */
+  .grid{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start}
+  @media (max-width:920px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+  .panel-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;letter-spacing:2px;color:var(--text);margin-bottom:18px}
+  .panel-title::before{content:"";width:3px;height:14px;border-radius:2px;background:linear-gradient(180deg,#7c3aed,#a78bfa)}
+
+  /* ===== fields ===== */
+  .field{margin-bottom:16px}
+  .field-label{display:block;font-size:12px;color:var(--muted);margin-bottom:8px;letter-spacing:1px}
+  select,input[type=text]{
+    width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;
+    color:var(--text);font-size:14px;padding:10px 12px;outline:none;font-family:inherit;
+    transition:border-color .15s;
+  }
+  select:focus,input[type=text]:focus{border-color:rgba(139,92,246,.55)}
+  select{appearance:none;-webkit-appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b8b99' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+  select option{background:#15151d;color:var(--text)}
+
+  .seg{display:flex;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:3px;gap:3px}
+  .seg button{flex:1;border:none;background:transparent;color:var(--muted);font-size:13px;font-family:inherit;
+    padding:8px 4px;border-radius:8px;cursor:pointer;transition:all .15s;letter-spacing:.5px}
+  .seg button.on{background:var(--accent-soft);color:var(--accent-2);font-weight:600;
+    box-shadow:inset 0 0 0 1px rgba(139,92,246,.35)}
+  .seg button:not(.on):hover{color:var(--text)}
+
+  .switch-row{display:flex;align-items:center;justify-content:space-between;background:var(--panel-2);
+    border:1px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:16px}
+  .switch-row .st{font-size:13px}
+  .switch-row .sd{font-size:11px;color:var(--muted);margin-top:3px}
+  .switch{position:relative;width:38px;height:21px;flex:none;cursor:pointer}
+  .switch input{display:none}
+  .switch i{position:absolute;inset:0;border-radius:999px;background:#2a2a35;transition:background .18s}
+  .switch i::after{content:"";position:absolute;top:2.5px;left:3px;width:16px;height:16px;border-radius:50%;
+    background:#84848f;transition:all .18s}
+  .switch input:checked + i{background:linear-gradient(135deg,#7c3aed,#8b5cf6)}
+  .switch input:checked + i::after{left:19px;background:#fff}
+
+  .btn-primary{
+    width:100%;border:none;cursor:pointer;font-family:inherit;font-size:15px;font-weight:600;letter-spacing:3px;
+    color:#fff;padding:12px;border-radius:12px;
+    background:linear-gradient(135deg,#7c3aed,#8b5cf6);
+    box-shadow:0 6px 20px rgba(124,58,237,.35);
+    transition:transform .15s, box-shadow .15s, opacity .15s;
+  }
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 9px 26px rgba(124,58,237,.45)}
+  .btn-primary:active{transform:translateY(0)}
+  .btn-primary[disabled]{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+
+  .hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.7}
+  .warn{font-size:12px;color:#fbbf24;margin-top:10px;display:none;line-height:1.6}
+
+  #manualInput{text-transform:uppercase;letter-spacing:8px;font-weight:700;text-align:center;font-size:17px}
+
+  /* ===== result ===== */
+  .plate-zone{display:flex;flex-direction:column;align-items:center;padding:8px 0 20px}
+  .plate{display:inline-flex;align-items:center;gap:12px;padding:14px 28px;border-radius:12px;
+    font-weight:800;font-size:44px;line-height:1;letter-spacing:6px;
+    font-family:"Arial Black","Arial","Microsoft YaHei",sans-serif;
+    border:2px solid rgba(255,255,255,.85);
+    box-shadow:0 12px 34px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .plate.blue{background:linear-gradient(180deg,#2f6fe4 0%,#1a4fc0 100%);color:#fff}
+  .plate.green{background:linear-gradient(100deg,#e4f2cd 0%,#b0dc85 55%,#7cc35f 100%);color:#1c2a12;font-size:34px;letter-spacing:4px}
+  .plate .p-region{white-space:nowrap}
+  .plate .p-dot{opacity:.75;font-size:.62em;transform:translateY(-4px)}
+  .plate .pc{display:inline-block;min-width:.68em;text-align:center}
+  .plate.mini{font-size:14px;padding:4px 10px;gap:5px;letter-spacing:2px;border-radius:6px;border-width:1px;box-shadow:none}
+  .plate.mini.green{font-size:12px}
+  .plate.mini .p-dot{transform:translateY(-1px)}
+  .plate.mini .pc{min-width:.6em}
+  .plate-empty{display:flex;align-items:center;justify-content:center;padding:26px 34px;border-radius:12px;
+    border:1.5px dashed var(--border-strong);color:var(--muted);font-size:13px;letter-spacing:2px}
+  .plate-caption{margin-top:14px;font-size:12px;color:var(--muted);letter-spacing:2px}
+
+  .score-zone{display:flex;align-items:center;gap:26px;padding:18px 4px 6px;border-top:1px solid var(--border)}
+  .ring-box{position:relative;width:132px;height:132px;flex:none}
+  .ring-box svg{width:132px;height:132px;transform:rotate(-90deg)}
+  .ring-bg{fill:none;stroke:#22222c;stroke-width:9}
+  .ring-fg{fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;
+    stroke-dasharray:326.7;stroke-dashoffset:326.7;transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1), stroke .4s}
+  .ring-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring-num b{font-size:31px;font-weight:800;letter-spacing:1.5px;transition:color .4s}
+  .ring-num span{font-size:10.5px;color:var(--muted);margin-top:5px;white-space:nowrap}
+  .score-side{flex:1;min-width:0}
+  .verdict{font-size:13px;color:var(--muted);line-height:1.9;margin-top:12px}
+
+  .grade{display:inline-flex;padding:7px 16px;border-radius:999px;font-weight:700;font-size:14px;letter-spacing:2px}
+  .rk-gold{background:linear-gradient(135deg,#f7d774,#e8a93d);color:#3a2a05}
+  .rk-purple{background:var(--accent-soft);color:#c4b5fd;box-shadow:inset 0 0 0 1px rgba(139,92,246,.45)}
+  .rk-green{background:rgba(52,211,153,.12);color:#6ee7b7;box-shadow:inset 0 0 0 1px rgba(52,211,153,.3)}
+  .rk-teal{background:rgba(45,212,191,.1);color:#5eead4;box-shadow:inset 0 0 0 1px rgba(45,212,191,.28)}
+  .rk-blue{background:rgba(147,197,253,.1);color:#93c5fd;box-shadow:inset 0 0 0 1px rgba(147,197,253,.25)}
+  .rk-gray{background:rgba(148,163,184,.12);color:#b6c2d6;box-shadow:inset 0 0 0 1px rgba(148,163,184,.25)}
+  .rk-orange{background:rgba(251,146,60,.1);color:#fdba74;box-shadow:inset 0 0 0 1px rgba(251,146,60,.3)}
+  .rk-red{background:rgba(248,113,113,.1);color:#fca5a5;box-shadow:inset 0 0 0 1px rgba(248,113,113,.3)}
+
+  .reason-title{font-size:13px;color:var(--muted);letter-spacing:2px;margin:20px 0 10px}
+  .reasons{display:flex;flex-direction:column;gap:8px}
+  .rrow{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);
+    border-radius:10px;background:var(--panel-2)}
+  .rtag{flex:none;padding:3px 9px;border-radius:6px;background:var(--accent-soft);color:var(--accent-2);
+    font-size:12px;font-weight:600;letter-spacing:1px;white-space:nowrap}
+  .rdesc{flex:1;font-size:13px;color:var(--muted);line-height:1.55;min-width:0}
+  .rdelta{flex:none;font-weight:700;font-size:14px;min-width:44px;text-align:right}
+  .rdelta.g{color:var(--good)} .rdelta.b{color:var(--bad)} .rdelta.z{color:var(--muted)}
+
+  /* ===== 图片选号 ===== */
+  .dropzone{border:1.5px dashed var(--border-strong);border-radius:12px;padding:20px 16px;text-align:center;
+    cursor:pointer;background:var(--panel-2);transition:border-color .15s, background .15s;margin-bottom:14px}
+  .dropzone:hover,.dropzone.drag{border-color:rgba(139,92,246,.6);background:rgba(139,92,246,.07)}
+  .dz-t{font-size:13px;font-weight:600;margin-top:10px;letter-spacing:1px}
+  .dz-d{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.7}
+  #ocrPreview{display:block;max-width:100%;max-height:180px;border-radius:10px;border:1px solid var(--border);margin-bottom:14px}
+  .pbar{height:6px;background:#1d1d27;border-radius:99px;overflow:hidden;margin-bottom:8px}
+  .pbar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width .25s}
+  .ptext{font-size:12px;color:var(--muted);margin-bottom:14px;letter-spacing:.5px}
+  textarea{width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;color:var(--text);
+    font-size:13px;padding:10px 12px;outline:none;font-family:inherit;resize:vertical;line-height:1.9;
+    letter-spacing:3px;transition:border-color .15s}
+  textarea:focus{border-color:rgba(139,92,246,.55)}
+  .rec{flex:none;font-size:11px;font-weight:700;letter-spacing:1px;color:#3a2a05;
+    background:linear-gradient(135deg,#f7d774,#e8a93d);padding:3px 9px;border-radius:999px;white-space:nowrap}
+
+  /* ===== batch ===== */
+  .batch-panel{margin-top:18px;display:none}
+  .batch-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .batch-head .clear{border:none;background:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:1px}
+  .batch-head .clear:hover{color:var(--text)}
+  .brows{display:flex;flex-direction:column;gap:8px}
+  .brow{display:flex;align-items:center;gap:14px;padding:10px 14px;border:1px solid var(--border);
+    border-radius:12px;background:var(--panel-2);cursor:pointer;transition:border-color .15s, background .15s}
+  .brow:hover{border-color:var(--border-strong)}
+  .brow.active{border-color:rgba(139,92,246,.55);background:rgba(139,92,246,.06)}
+  .brank{flex:none;width:22px;height:22px;border-radius:7px;background:#1d1d27;color:var(--muted);
+    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .brow.active .brank{background:var(--accent-soft);color:var(--accent-2)}
+  .bbar{flex:1;height:5px;border-radius:99px;background:#1d1d27;overflow:hidden;min-width:40px}
+  .bbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7c3aed,#a78bfa)}
+  .bbeat{flex:none;font-size:12px;color:var(--muted);min-width:72px;text-align:right;letter-spacing:.3px}
+  .bgrade{flex:none;font-size:11px;letter-spacing:1px;padding:4px 10px;border-radius:999px;white-space:nowrap}
+
+  footer{margin-top:26px;text-align:center;font-size:12px;color:#5d5d6b;line-height:1.9}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="logo">苏</div>
+      <div>
+        <h1>苏牌甄选</h1>
+        <p>江苏地区车牌号码吉凶甄选</p>
+      </div>
+    </div>
+    <div class="head-badge">民俗趣味测算 · 仅供娱乐参考</div>
+  </header>
+
+  <div class="grid">
+    <!-- 左侧：配置 -->
+    <section class="panel">
+      <div class="panel-title">号码配置</div>
+
+      <div class="field">
+        <label class="field-label">所属城市</label>
+        <select id="citySelect"></select>
+      </div>
+
+      <div class="field">
+        <label class="field-label">号牌类型</label>
+        <div class="seg" id="typeSeg">
+          <button data-type="blue" class="on">蓝牌 · 燃油车</button>
+          <button data-type="green">绿牌 · 新能源</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">操作方式</label>
+        <div class="seg" id="modeSeg">
+          <button data-mode="pick" class="on">机选号码</button>
+          <button data-mode="ocr">图片选号</button>
+          <button data-mode="test">手动测号</button>
+        </div>
+      </div>
+
+      <div id="pickSection">
+        <div class="switch-row">
+          <div>
+            <div class="st">智能优选</div>
+            <div class="sd">从数百个候选号码中自动挑选最高评级</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="smartToggle" checked><i></i></label>
+        </div>
+        <div class="field">
+          <label class="field-label">生成数量</label>
+          <select id="batchSelect">
+            <option value="1" selected>1 个</option>
+            <option value="5">5 个（批量对比）</option>
+            <option value="10">10 个（批量对比）</option>
+          </select>
+        </div>
+        <button class="btn-primary" id="btnPick">开始机选</button>
+        <div class="hint">机选号码随机生成，符合江苏号牌编码规则：蓝牌 5 位序号，绿牌 6 位序号（首位为 D 纯电 / F 插混增程，末位为数字），均不含字母 I 与 O。</div>
+      </div>
+
+      <div id="ocrSection" style="display:none">
+        <div class="dropzone" id="dropzone">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="9" r="2"></circle><path d="M21 15l-4.5-4.5L7 20"></path></svg>
+          <div class="dz-t">点击选择或拖入选号界面截图</div>
+          <div class="dz-d">也可直接在本页 Ctrl+V 粘贴截图</div>
+        </div>
+        <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/bmp" style="display:none">
+        <img id="ocrPreview" alt="截图预览" style="display:none">
+        <div class="pbar" id="ocrBar" style="display:none"><i id="ocrBarFill"></i></div>
+        <div class="ptext" id="ocrStatus"></div>
+        <div class="field">
+          <label class="field-label">候选号码（每行一个，可手动增删修改）</label>
+          <textarea id="candArea" rows="7" placeholder="识别出的号码会列在这里，也可以直接粘贴号码，每行一个&#10;例如：&#10;88A88&#10;16816&#10;D66668"></textarea>
+        </div>
+        <button class="btn-primary" id="btnRank" disabled>开始评估排序</button>
+        <div class="hint">识别全程在本机浏览器内完成，图片不会上传到任何服务器；如有识别偏差，直接修改后再排序即可。</div>
+        <div class="warn" id="ocrError"></div>
+      </div>
+
+      <div id="testSection" style="display:none">
+        <div class="field">
+          <label class="field-label" id="manualLabel">输入 5 位序号</label>
+          <input type="text" id="manualInput" maxlength="5" placeholder="如 88A88" autocomplete="off" spellcheck="false">
+        </div>
+        <button class="btn-primary" id="btnTest" disabled>开始测号</button>
+        <div class="warn" id="greenWarn">提示：小型新能源号牌序号首位通常为 D（纯电）或 F（插混/增程），当前输入不影响测算。</div>
+        <div class="hint">支持数字与字母组合，字母 I、O 会被自动过滤；输入完成后按回车亦可测算。</div>
+      </div>
+    </section>
+
+    <!-- 右侧：结果 -->
+    <section class="panel">
+      <div class="panel-title">测算结果</div>
+      <div class="plate-zone" id="plateZone">
+        <div class="plate-empty">配置后点击「开始机选」生成号码</div>
+      </div>
+      <div id="resultBody" style="display:none">
+        <div class="score-zone">
+          <div class="ring-box">
+            <svg viewBox="0 0 132 132">
+              <circle class="ring-bg" cx="66" cy="66" r="52"></circle>
+              <circle class="ring-fg" id="ringFg" cx="66" cy="66" r="52"></circle>
+            </svg>
+            <div class="ring-num"><b id="rankCode">--</b><span id="beatLine">等待测算</span></div>
+          </div>
+          <div class="score-side">
+            <span class="grade" id="gradeChip">--</span>
+            <div class="verdict" id="verdict"></div>
+          </div>
+        </div>
+        <div class="reason-title">判定明细</div>
+        <div class="reasons" id="reasonList"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 批量结果 -->
+  <section class="panel batch-panel" id="batchPanel">
+    <div class="batch-head">
+      <div class="panel-title" style="margin-bottom:0">候选号码排序（评级从高到低，点击查看详情）</div>
+      <button class="clear" id="btnClear">清空</button>
+    </div>
+    <div class="brows" id="batchList"></div>
+  </section>
+
+  <footer>
+    号码吉凶判定基于数字谐音与民间俗信，仅供趣味参考，不构成任何选号建议。<br>
+    「超越百分比」由约 2 万个随机生成号码的样本分布估算得出。正式选号请通过「交管 12123」或当地车管所官方渠道办理。
+  </footer>
+</div>
+
+<script>
+/* ================= 基础数据 ================= */
+const CITIES = [
+  ['A','南京'],['B','无锡'],['C','徐州'],['D','常州'],['E','苏州'],
+  ['F','南通'],['G','连云港'],['H','淮安'],['J','盐城'],['K','扬州'],
+  ['L','镇江'],['M','泰州'],['N','宿迁']
+];
+const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; /* 不含 I、O */
+const RING_LEN = 326.7;
+
+/* 81 数理表（民俗流传版本） */
+const D81 = {
+  1:['大吉','太极之数','天地定位，万物开泰'],
+  2:['凶','两仪之数','混沌未开，进退保守'],
+  3:['大吉','三才之数','天地人和，大事有成'],
+  4:['凶','四象之数','新生初发，谨慎为上'],
+  5:['大吉','五行之数','循环相生，圆通畅达'],
+  6:['大吉','六爻之数','天格地祥，福庆绵长'],
+  7:['吉','七政之数','精悍严谨，刚毅果断'],
+  8:['大吉','八卦之数','乾坎艮震，万事亨通'],
+  9:['凶','九宫之数','大成之数，盛极必衰'],
+  10:['凶','终结之数','万业终局，劫数难逃'],
+  11:['大吉','旱苗逢雨','枯木逢春，万物更新'],
+  12:['凶','薄弱之数','薄弱无力，谋事难成'],
+  13:['大吉','春日牡丹','才艺多能，智谋奇略'],
+  14:['凶','破兆之数','家庭缘薄，孤独遭难'],
+  15:['大吉','福寿之数','福寿圆满，富贵荣誉'],
+  16:['大吉','厚重之数','厚德载物，安富尊荣'],
+  17:['半吉','刚强之数','刚柔并济，有突破力'],
+  18:['大吉','铁镜重磨','有志竟成，内外吉祥'],
+  19:['凶','多难之数','风云蔽日，辛苦重来'],
+  20:['凶','屋下藏金','非业破运，灾难重重'],
+  21:['大吉','明月中天','光风霁月，万物确立'],
+  22:['凶','秋草逢霜','薄弱乏力，诸事不顺'],
+  23:['大吉','壮丽之数','旭日东升，名显四方'],
+  24:['大吉','掘藏之数','金钱丰惠，白手成家'],
+  25:['半吉','荣俊之数','资性英敏，才能奇特'],
+  26:['半吉','变怪之数','英雄豪杰，波澜起伏'],
+  27:['凶','增长之数','欲望无止，多难多忧'],
+  28:['凶','浮萍之数','豪杰气薄，骨肉分离'],
+  29:['大吉','智谋之数','泉涌奇智，功名成就'],
+  30:['半吉','非运之数','绝处逢生，浮沉不定'],
+  31:['大吉','春日花开','智勇得志，心想事成'],
+  32:['大吉','宝马金鞍','侥幸多望，贵人得助'],
+  33:['大吉','旭日升天','鸾凤相会，昌隆至极'],
+  34:['凶','破家之数','家破人亡，灾难不绝'],
+  35:['大吉','温和平静','温良和顺，优雅发展'],
+  36:['凶','波澜之数','风浪不平，常陷穷困'],
+  37:['大吉','猛虎出林','权威显达，热诚忠信'],
+  38:['半吉','磨铁成针','意志坚定，以勤取胜'],
+  39:['大吉','富贵之数','花开富贵，德高望重'],
+  40:['半吉','退安之数','谨慎行事，退守平安'],
+  41:['大吉','有德之数','纯阳独秀，德高功成'],
+  42:['凶','寒蝉在柳','博达多能，奈何势弱'],
+  43:['凶','散财之数','雨夜之花，散财消福'],
+  44:['凶','烦闷之数','事不如意，烦闷不堪'],
+  45:['大吉','顺风之数','新生泰和，万事如意'],
+  46:['凶','浪里淘金','载宝沉舟，须防大难'],
+  47:['大吉','点石成金','花开之象，万宝归宗'],
+  48:['大吉','古松立鹤','智谋兼备，德量荣达'],
+  49:['半吉','转变之数','吉凶难分，不断辛苦'],
+  50:['半吉','小舟入海','一盛一衰，浮沉不定'],
+  51:['半吉','沉浮之数','盛衰交加，须防大难'],
+  52:['大吉','达眼之数','卓识先眼，先见之明'],
+  53:['半吉','曲卷难星','外祥内患，谋事难成'],
+  54:['凶','石上栽花','多难之数，惨淡不堪'],
+  55:['半吉','善恶之数','善善恶恶，吉人天相'],
+  56:['凶','岩头步马','势弱无力，进退维谷'],
+  57:['大吉','寒雪青松','先苦后甜，一世荣贵'],
+  58:['半吉','晚行遇月','沉浮多难，先苦后甘'],
+  59:['凶','寒肩卧雪','须防外患，进退两难'],
+  60:['凶','无谋之数','黑暗无光，心迷意乱'],
+  61:['大吉','牡丹芙蓉','花开富贵，名利双收'],
+  62:['凶','衰败之数','衰败穷困，难以为继'],
+  63:['大吉','舟归平海','富贵荣华，身心安泰'],
+  64:['凶','非业之数','骨肉分离，孤独悲愁'],
+  65:['大吉','巨流归海','天长地久，家运昌隆'],
+  66:['凶','岩头步马','内外不和，志望难达'],
+  67:['大吉','通达之数','天赋幸运，四通八达'],
+  68:['大吉','顺风吹帆','智虑周密，步步高升'],
+  69:['凶','残菊逢霜','家运衰败，内忧外患'],
+  70:['凶','残花遇雨','家宅空虚，万事皆空'],
+  71:['半吉','石中金玉','吉凶参半，须防小人'],
+  72:['凶','劳苦之数','荣苦相伴，阴云遮日'],
+  73:['半吉','无勇之数','盛衰交加，徒有高志'],
+  74:['凶','残菊经霜','秋木零落，须防灾祸'],
+  75:['半吉','退守之数','凶中带吉，退守可安'],
+  76:['凶','离散之数','倾覆离散，万事皆休'],
+  77:['半吉','晚秋寂寞','家庭缘薄，晚景凄凉'],
+  78:['半吉','晚苦之数','苦尽甘来，须防晚运'],
+  79:['凶','挽回之数','挽回乏力，前途暗淡'],
+  80:['凶','遁隐之数','辛苦不绝，终归遁隐'],
+  81:['大吉','万物回春','还元复始，万象更新']
+};
+
+/* 单个数字的民俗能量 */
+const DIGIT_ENERGY = {'0':0,'1':2,'2':2,'3':1,'4':-15,'5':1,'6':9,'7':2,'8':11,'9':7};
+/* 字母谐音评分 */
+const LETTER_SCORE = {A:3,B:1,C:1,D:2,E:1,F:8,G:1,H:1,J:3,K:1,L:3,M:1,N:1,P:1,Q:1,R:1,S:4,T:1,U:1,V:1,W:3,X:-2,Y:1,Z:1};
+const LETTER_MEANING = {A:'甲字头，居首争先',D:'谐音「得」',F:'谐音「发」',J:'谐音「进」',L:'谐音「利」',S:'谐音「顺」',W:'谐音「旺」',X:'谐音「凶」'};
+
+/* 吉利数字组合（按优先级排列，先长后短，命中位置不重复计分） */
+const GOOD_SUBS = [
+  ['8888',110,'四发齐聚，财气满盈'],
+  ['6666',100,'四六同堂，六六大顺'],
+  ['9999',90,'四九长久，天长地久'],
+  ['6688',50,'顺顺发发，又顺又发'],
+  ['1688',45,'一路发发，财路亨通'],
+  ['8899',45,'发发久久，富贵长久'],
+  ['6699',40,'顺顺久久，平稳长远'],
+  ['1314',35,'一生一世，圆满深情'],
+  ['888',60,'三连发，财气聚集'],
+  ['666',50,'六六大顺'],
+  ['999',40,'三九长久'],
+  ['168',30,'一路发'],
+  ['518',30,'我要发'],
+  ['3344',30,'生生世世'],
+  ['158',25,'要我发'],
+  ['520',25,'我爱你'],
+  ['998',20,'久久发'],
+  ['88',15,'双发临门'],
+  ['66',12,'双顺相伴'],
+  ['99',10,'双久相随']
+];
+/* 忌讳数字组合 */
+const BAD_SUBS = [
+  ['7456',-20,'谐音「气死我啦」，民俗调侃'],
+  ['250',-45,'谐音「二百五」'],
+  ['514',-40,'谐音不佳'],
+  ['414',-30,'谐音不佳'],
+  ['74',-25,'谐音「气死」'],
+  ['14',-20,'谐音「要死」'],
+  ['44',-30,'双四相连，民俗忌讳']
+];
+
+/* ================= 评分引擎 ================= */
+function straightLen(s){
+  let best = 1, cur = 1;
+  for(let i=1;i<s.length;i++){ if(+s[i] === +s[i-1]+1){ cur++; best = Math.max(best,cur); } else cur = 1; }
+  cur = 1;
+  for(let i=1;i<s.length;i++){ if(+s[i] === +s[i-1]-1){ cur++; best = Math.max(best,cur); } else cur = 1; }
+  return best;
+}
+
+/* 评级表：内部展示分 → 段位（SR 为最高） */
+const RANKS = [
+  {code:'SR',  min:98, name:'天选之号', cls:'rk-gold',   color:'#f5c451',
+    note:'万里挑一的天选靓号，凌驾于几乎全部随机号码之上，若被选中请务必珍惜。'},
+  {code:'SSS', min:94, name:'极品靓号', cls:'rk-gold',   color:'#f5c451',
+    note:'可遇不可求的极品靓号，数字组合堪称完美，放心拿下。'},
+  {code:'SS',  min:88, name:'臻选之号', cls:'rk-purple', color:'#c4b5fd',
+    note:'极为难得的臻选之号，寓意出众，值得果断锁定。'},
+  {code:'S',   min:78, name:'优选好号', cls:'rk-purple', color:'#a78bfa',
+    note:'百里挑一的优选好号，整体格局上佳，可以放心选择。'},
+  {code:'A',   min:68, name:'上等号码', cls:'rk-green',  color:'#6ee7b7',
+    note:'上等之选，整体寓意向好，值得纳入首选范围。'},
+  {code:'B',   min:58, name:'吉利号码', cls:'rk-teal',   color:'#5eead4',
+    note:'整体优于大多数随机号码，寓意平稳向好，可以考虑。'},
+  {code:'C',   min:48, name:'中平号码', cls:'rk-blue',   color:'#93c5fd',
+    note:'无明显吉凶特征，无功无过，随缘即可。'},
+  {code:'D',   min:35, name:'普通号码', cls:'rk-gray',   color:'#b6c2d6',
+    note:'表现略逊于多数号码，若有更好选择可再挑选。'},
+  {code:'E',   min:20, name:'略弱号码', cls:'rk-orange', color:'#fdba74',
+    note:'民俗寓意略有瑕疵，整体表现偏弱，建议斟酌。'},
+  {code:'F',   min:0,  name:'建议避开', cls:'rk-red',    color:'#fca5a5',
+    note:'民俗寓意欠佳，建议优先考虑其他号码。'}
+];
+function rankOf(score){
+  for(const r of RANKS){ if(score >= r.min) return r; }
+  return RANKS[RANKS.length - 1];
+}
+
+/* 蒙特卡洛样本：随机生成 2 万个号码计分并排序，用于估算「超越百分之多少的人」 */
+const SAMPLE_N = 20000;
+const sampleCache = { blue:null, green:null };
+function getSample(type){
+  if(sampleCache[type]) return sampleCache[type];
+  const arr = new Array(SAMPLE_N);
+  for(let i=0;i<SAMPLE_N;i++){ arr[i] = analyze(genBody(type, false)).score; }
+  arr.sort((a,b)=>a-b);
+  sampleCache[type] = arr;
+  return arr;
+}
+function percentileOf(type, score){
+  const arr = getSample(type);
+  let lo = 0, hi = arr.length;
+  while(lo < hi){ const mid = (lo + hi) >> 1; if(arr[mid] < score) lo = mid + 1; else hi = mid; }
+  const below = lo;
+  let up = lo;
+  while(up < arr.length && arr[up] === score) up++;
+  return (below + (up - below) * 0.5) / arr.length * 100;
+}
+function fmtBeat(p){
+  if(p >= 99.99) return '99.99';
+  if(p >= 99) return p.toFixed(2);
+  if(p < 0.1) return '<0.1';
+  return p.toFixed(1);
+}
+
+/* 原始分 → 展示分：基础分 40 以下线性下探，以上用平方根曲线趋近满分，
+   让顶级号码在封顶之下仍能拉开梯度，而不是全部挤在同一个上限值。 */
+function mapFinal(raw){
+  if(raw <= 40){
+    return Math.max(2, Math.round(40 + (raw - 40) * 0.8));
+  }
+  const v = 40 + 60 * Math.sqrt((raw - 40) / 320);
+  return Math.min(100, Math.round(v));
+}
+
+function analyze(body){
+  const reasons = [];
+  let score = 0;
+  const add = (tag, desc, delta) => { score += delta; reasons.push({tag, desc, delta}); };
+  add('基础', '号码起始底分', 40);
+
+  const digitPos = [];
+  body.split('').forEach((c,i)=>{ if(/[0-9]/.test(c)) digitPos.push(i); });
+  const ds = digitPos.map(i=>body[i]).join('');
+  const used = new Set();
+  const mark = (a,b) => { for(let i=a;i<b;i++) used.add(i); };
+
+  /* 1. 特殊结构（重复号若为「4」按民俗忌讳处理，不做稀有加分） */
+  const baoziM = body.match(/^(.)\1+$/);
+  const baozi = !!baoziM;
+  if(baozi){
+    if(baoziM[1] === '4'){
+      add('全四号','全号皆为「4」，民俗大忌',-80);
+    } else {
+      add('豹子号','全号同字，万中无一的顶级靓号',250);
+    }
+    mark(0, body.length);
+  } else {
+    const m4 = body.match(/(.)\1{3}/);
+    if(m4){
+      if(m4[1] === '4'){ add('四连四','连续四个「4」，民俗大忌',-60); }
+      else { add('四连号','连续四个相同数字，十分罕见',90); }
+      mark(m4.index, m4.index+4);
+    } else {
+      const m3 = body.match(/(.)\1{2}/);
+      if(m3){
+        if(m3[1] === '4'){ add('三连四','连续三个「4」，寓意不佳',-40); }
+        else { add('三连号','连续三个相同数字，寓意聚气',40); }
+        mark(m3.index, m3.index+3);
+      }
+    }
+    const sl = straightLen(ds);
+    if(sl >= 5) add('顺子号','五连顺子，步步高升',150);
+    else if(sl === 4) add('四连顺','四连顺子，节节攀升',80);
+    const spanFree = (st,len)=>{ for(let i=st;i<st+len;i++){ if(used.has(i)) return false; } return true; };
+    const mAABB = body.match(/(.)\1(.)\2/);
+    if(mAABB && spanFree(mAABB.index,4)){ add('AABB','两两成双，好事成双',35); mark(mAABB.index, mAABB.index+4); }
+    const mABAB = body.match(/(.)(.)\1\2/);
+    if(mABAB && spanFree(mABAB.index,4)){ add('ABAB','循环往复，韵律和谐',30); mark(mABAB.index, mABAB.index+4); }
+    if(ds.length>=4 && ds === ds.split('').reverse().join(''))
+      add('回文号','正读反读皆相同，圆融对称',40);
+  }
+
+  /* 2. 谐音组合（已占用位置不重复计分） */
+  function matchSubs(list){
+    for(const item of list){
+      const pat = item[0], delta = item[1], desc = item[2];
+      let from = 0;
+      while(true){
+        const k = ds.indexOf(pat, from);
+        if(k < 0) break;
+        const idxs = [];
+        let ok = true;
+        for(let j=0;j<pat.length;j++){
+          const bi = digitPos[k+j];
+          if(used.has(bi)){ ok = false; break; }
+          idxs.push(bi);
+        }
+        if(ok){
+          add('含「'+pat+'」', desc, delta);
+          idxs.forEach(i=>used.add(i));
+          break;
+        }
+        from = k+1;
+      }
+    }
+  }
+  if(!baozi){ matchSubs(GOOD_SUBS); matchSubs(BAD_SUBS); }
+
+  /* 3. 尾数 */
+  const last = body[body.length-1];
+  if(!baozi){
+    if(last==='8') add('尾数佳','尾号为 8，以「发」收尾',10);
+    else if(last==='6') add('尾数佳','尾号为 6，以「顺」收尾',8);
+    else if(last==='9') add('尾数佳','尾号为 9，以「久」收尾',6);
+    else if(last==='4') add('尾数带四','尾号为 4，民俗认为收尾欠佳',-20);
+  }
+
+  /* 4. 数字能量 */
+  let energy = 0; const cnt = {};
+  for(const c of ds){ energy += DIGIT_ENERGY[c]; cnt[c] = (cnt[c]||0)+1; }
+  const parts = [];
+  if(cnt['8']) parts.push(cnt['8']+' 个「8」主发财');
+  if(cnt['6']) parts.push(cnt['6']+' 个「6」主顺利');
+  if(cnt['9']) parts.push(cnt['9']+' 个「9」主长久');
+  if(cnt['4']) parts.push(cnt['4']+' 个「4」民俗忌讳');
+  if(ds.length) add('数字能量', parts.length? parts.join('，') : '数字组合吉凶平平', energy);
+
+  /* 5. 字母寓意 */
+  let le = 0; const ldesc = [];
+  for(const c of body){
+    if(/[A-Z]/.test(c)){
+      le += LETTER_SCORE[c] || 0;
+      if(LETTER_MEANING[c]) ldesc.push(c+' '+LETTER_MEANING[c]);
+    }
+  }
+  if(le !== 0 || ldesc.length)
+    add('字母寓意', ldesc.length? ldesc.join('；') : '字母无明显吉凶谐音', le);
+
+  /* 6. 数字之和 */
+  const sum = ds.split('').reduce((a,c)=>a + (+c), 0);
+  const ld = sum % 10;
+  if(ld===8) add('数字和','各位数字之和为 '+sum+'，尾数为 8 主发',8);
+  else if(ld===6) add('数字和','各位数字之和为 '+sum+'，尾数为 6 主顺',6);
+  else if(ld===9) add('数字和','各位数字之和为 '+sum+'，尾数为 9 主久',5);
+  else if(ld===4) add('数字和','各位数字之和为 '+sum+'，尾数为 4 欠佳',-5);
+
+  /* 7. 81 数理 */
+  let d81 = null;
+  if(ds.length){
+    const num = parseInt(ds, 10);
+    let idx = num % 80;
+    if(idx === 0) idx = 80;
+    const d = D81[idx];
+    const lvDelta = {'大吉':12,'吉':8,'半吉':3,'凶':-9}[d[0]];
+    d81 = {idx: idx, lv: d[0], name: d[1], mean: d[2]};
+    add('81数理','数理 '+idx+'（'+d[0]+'）· '+d[1]+'：'+d[2], lvDelta);
+  }
+
+  score = mapFinal(score);
+  reasons.sort((a,b)=>b.delta - a.delta);
+  return {body: body, score: score, reasons: reasons, d81: d81};
+}
+
+/* ================= 号码生成 ================= */
+function randDigit(bias){
+  if(bias){
+    const pool = '0112235566678889'; /* 提高 6/8/9 权重，不出现 4 */
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+  return String(Math.floor(Math.random()*10));
+}
+function genBody(type, bias){
+  let s = '';
+  if(type === 'green'){
+    s += Math.random()<0.5 ? 'D' : 'F';
+    for(let i=0;i<5;i++){
+      if(i === 4) s += randDigit(bias);
+      else s += Math.random() < (bias?0.55:0.75) ? randDigit(bias) : LETTERS[Math.floor(Math.random()*LETTERS.length)];
+    }
+  } else {
+    for(let i=0;i<5;i++){
+      s += Math.random() < 0.72 ? randDigit(bias) : LETTERS[Math.floor(Math.random()*LETTERS.length)];
+    }
+  }
+  return s;
+}
+function smartPick(type){
+  let best = null;
+  for(let i=0;i<600;i++){
+    const a = analyze(genBody(type, true));
+    if(!best || a.score > best.score) best = a;
+  }
+  return best;
+}
+
+/* ================= 状态与 DOM ================= */
+const state = { city:'A', type:'blue', mode:'pick', smart:true, batch:1, current:null, batchResults:[] };
+
+const $ = id => document.getElementById(id);
+const citySelect = $('citySelect'), typeSeg = $('typeSeg'), modeSeg = $('modeSeg'),
+  pickSection = $('pickSection'), ocrSection = $('ocrSection'), testSection = $('testSection'),
+  dropzone = $('dropzone'), fileInput = $('fileInput'), ocrPreview = $('ocrPreview'),
+  ocrBar = $('ocrBar'), ocrBarFill = $('ocrBarFill'), ocrStatus = $('ocrStatus'),
+  candArea = $('candArea'), btnRank = $('btnRank'), ocrError = $('ocrError'),
+  smartToggle = $('smartToggle'), batchSelect = $('batchSelect'), btnPick = $('btnPick'),
+  manualLabel = $('manualLabel'), manualInput = $('manualInput'), btnTest = $('btnTest'), greenWarn = $('greenWarn'),
+  plateZone = $('plateZone'), resultBody = $('resultBody'), ringFg = $('ringFg'),
+  rankCode = $('rankCode'), beatLine = $('beatLine'), gradeChip = $('gradeChip'), verdictEl = $('verdict'), reasonList = $('reasonList'),
+  batchPanel = $('batchPanel'), batchList = $('batchList'), btnClear = $('btnClear');
+
+CITIES.forEach(c=>{
+  const o = document.createElement('option');
+  o.value = c[0]; o.textContent = '苏'+c[0]+' · '+c[1];
+  citySelect.appendChild(o);
+});
+
+function cityName(){
+  const c = CITIES.find(x=>x[0]===state.city);
+  return c ? c[1] : '';
+}
+
+/* ================= 渲染 ================= */
+function plateHTML(body, type, mini){
+  const chars = body.split('').map(c=>'<span class="pc">'+c+'</span>').join('');
+  return '<span class="p-region">苏'+state.city+'</span><span class="p-dot">·</span><span class="p-body">'+chars+'</span>';
+}
+
+function buildPlate(body, type, scrambled){
+  const pool = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let shown = body;
+  if(scrambled){
+    shown = body.split('').map(()=>pool[Math.floor(Math.random()*pool.length)]).join('');
+  }
+  plateZone.innerHTML = '<div class="plate '+type+'">'+plateHTML(shown, type)+'</div>'
+    + '<div class="plate-caption">江苏省 · '+cityName()+' · '+(type==='blue'?'小型汽车号牌':'小型新能源汽车号牌')+'</div>';
+}
+
+let scrambleTimer = null;
+function playScramble(a, done){
+  clearInterval(scrambleTimer);
+  buildPlate(a.body, state.type, true);
+  const chars = plateZone.querySelectorAll('.pc');
+  const pool = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let tick = 0;
+  scrambleTimer = setInterval(()=>{
+    tick++;
+    chars.forEach((el,i)=>{
+      if(tick >= 5 + i*3) el.textContent = a.body[i];
+      else el.textContent = pool[Math.floor(Math.random()*pool.length)];
+    });
+    if(tick >= 5 + a.body.length*3 + 2){
+      clearInterval(scrambleTimer);
+      if(done) done();
+    }
+  }, 45);
+}
+
+function countUpPct(el, target){
+  const t0 = performance.now(), dur = 900;
+  function step(t){
+    const p = Math.min(1, (t-t0)/dur);
+    const eased = 1 - Math.pow(1-p, 3);
+    el.textContent = '超越 ' + fmtBeat(target * eased) + '% 的人';
+    if(p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* 给评分结果打上类型、评级与超越百分比标记 */
+function decorate(a, type){
+  a.type = type;
+  a.rank = rankOf(a.score);
+  a.beat = percentileOf(type, a.score);
+  return a;
+}
+
+function fmtDelta(d){
+  if(d > 0) return '+'+d;
+  if(d < 0) return ''+d;
+  return '0';
+}
+
+function renderResult(a, animate){
+  state.current = a;
+  resultBody.style.display = '';
+
+  if(animate){ playScramble(a, null); }
+  else buildPlate(a.body, state.type, false);
+
+  if(!a.rank) decorate(a, a.type || state.type);
+  const rk = a.rank;
+
+  gradeChip.className = 'grade ' + rk.cls;
+  gradeChip.textContent = rk.code + ' · ' + rk.name;
+
+  ringFg.style.stroke = rk.color;
+  rankCode.style.color = rk.color;
+  rankCode.textContent = rk.code;
+
+  const offset = RING_LEN * (1 - a.beat / 100);
+  if(animate){
+    ringFg.style.transition = 'none';
+    ringFg.style.strokeDashoffset = RING_LEN;
+    void ringFg.getBoundingClientRect();
+    ringFg.style.transition = '';
+    requestAnimationFrame(()=>{ ringFg.style.strokeDashoffset = offset; });
+    countUpPct(beatLine, a.beat);
+  } else {
+    ringFg.style.strokeDashoffset = offset;
+    beatLine.textContent = '超越 ' + fmtBeat(a.beat) + '% 的人';
+  }
+
+  verdictEl.textContent = rk.note;
+
+  reasonList.innerHTML = a.reasons.map(r=>{
+    const cls = r.delta>0 ? 'g' : (r.delta<0 ? 'b' : 'z');
+    return '<div class="rrow"><span class="rtag">'+r.tag+'</span><span class="rdesc">'+r.desc
+      +'</span><span class="rdelta '+cls+'">'+fmtDelta(r.delta)+'</span></div>';
+  }).join('');
+
+  highlightBatchActive();
+}
+
+/* ================= 批量 ================= */
+function renderBatch(){
+  if(!state.batchResults.length){ batchPanel.style.display = 'none'; return; }
+  batchPanel.style.display = '';
+  batchList.innerHTML = state.batchResults.map((a,i)=>{
+    if(!a.rank) decorate(a, a.type || state.type);
+    const active = state.current && state.current === a ? ' active' : '';
+    const t = a.type || state.type;
+    return '<div class="brow'+active+'" data-i="'+i+'">'
+      + '<span class="brank">'+(i+1)+'</span>'
+      + '<span class="plate mini '+t+'">'+plateHTML(a.body, t)+'</span>'
+      + (i===0 ? '<span class="rec">推荐</span>' : '')
+      + '<span class="bbar"><i style="width:'+a.beat.toFixed(1)+'%"></i></span>'
+      + '<span class="bbeat">超越 '+fmtBeat(a.beat)+'%</span>'
+      + '<span class="bgrade grade '+a.rank.cls+'">'+a.rank.code+'</span>'
+      + '</div>';
+  }).join('');
+}
+function highlightBatchActive(){
+  batchList.querySelectorAll('.brow').forEach(row=>{
+    const a = state.batchResults[+row.dataset.i];
+    row.classList.toggle('active', !!state.current && a === state.current);
+  });
+}
+
+/* ================= 事件 ================= */
+citySelect.addEventListener('change', ()=>{
+  state.city = citySelect.value;
+  if(state.current) buildPlate(state.current.body, state.type, false);
+  renderBatch();
+});
+
+typeSeg.querySelectorAll('button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    typeSeg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    state.type = b.dataset.type;
+    setTimeout(()=>getSample(state.type), 0);
+    manualInput.value = '';
+    validateManual();
+    if(state.current) renderResult(state.current, false);
+    else renderBatch();
+  });
+});
+
+function setMode(mode){
+  state.mode = mode;
+  modeSeg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x.dataset.mode === mode));
+  pickSection.style.display = mode==='pick' ? '' : 'none';
+  ocrSection.style.display = mode==='ocr' ? '' : 'none';
+  testSection.style.display = mode==='test' ? '' : 'none';
+}
+modeSeg.querySelectorAll('button').forEach(b=>{
+  b.addEventListener('click', ()=>setMode(b.dataset.mode));
+});
+
+btnPick.addEventListener('click', ()=>{
+  const n = state.batch;
+  const results = [];
+  if(n === 1){
+    const a = state.smart ? smartPick(state.type) : analyze(genBody(state.type, false));
+    renderResult(decorate(a, state.type), true);
+    return;
+  }
+  for(let i=0;i<n;i++){
+    if(state.smart){
+      let best = null;
+      for(let j=0;j<150;j++){
+        const a = analyze(genBody(state.type, true));
+        if(!best || a.score > best.score) best = a;
+      }
+      results.push(decorate(best, state.type));
+    } else {
+      results.push(decorate(analyze(genBody(state.type, false)), state.type));
+    }
+  }
+  results.sort((a,b)=>b.score - a.score);
+  state.batchResults = results;
+  renderBatch();
+  renderResult(results[0], true);
+});
+
+batchSelect.addEventListener('change', ()=>{ state.batch = +batchSelect.value; });
+smartToggle.addEventListener('change', ()=>{ state.smart = smartToggle.checked; });
+
+btnClear.addEventListener('click', ()=>{
+  state.batchResults = [];
+  renderBatch();
+});
+batchList.addEventListener('click', e=>{
+  const row = e.target.closest('.brow');
+  if(!row) return;
+  const a = state.batchResults[+row.dataset.i];
+  if(a) renderResult(a, true);
+});
+
+/* ================= 图片选号（本机 OCR） ================= */
+const OCR_CDNS = [
+  'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+  'https://unpkg.com/tesseract.js@5.1.1/dist/tesseract.min.js',
+  'https://cdn.bootcdn.net/ajax/libs/tesseract.js/5.1.1/tesseract.min.js'
+];
+let ocrLibPromise = null;
+function loadOcrLib(){
+  if(window.Tesseract) return Promise.resolve();
+  if(ocrLibPromise) return ocrLibPromise;
+  ocrLibPromise = new Promise((resolve, reject)=>{
+    let i = 0;
+    const tryNext = ()=>{
+      if(i >= OCR_CDNS.length){ reject(new Error('OCR 组件加载失败')); return; }
+      const url = OCR_CDNS[i++];
+      const sc = document.createElement('script');
+      sc.src = url;
+      sc.onload = ()=>{ window.__ocrUrl = url; resolve(); };
+      sc.onerror = ()=>{ sc.remove(); tryNext(); };
+      document.head.appendChild(sc);
+    };
+    tryNext();
+  });
+  return ocrLibPromise;
+}
+
+let ocrWorker = null;
+async function getOcrWorker(){
+  if(ocrWorker) return ocrWorker;
+  await loadOcrLib();
+  const opts = { logger: updateOcrProgress };
+  if(window.__ocrUrl && /tesseract\.min\.js$/.test(window.__ocrUrl)){
+    opts.workerPath = window.__ocrUrl.replace(/tesseract\.min\.js$/, 'worker.min.js');
+  }
+  ocrWorker = await Tesseract.createWorker('eng', 1, opts);
+  return ocrWorker;
+}
+
+function updateOcrProgress(m){
+  const map = {
+    'loading tesseract core':'正在加载识别核心',
+    'initializing tesseract':'正在初始化引擎',
+    'loading language traineddata':'正在下载语言数据',
+    'initializing api':'正在准备识别',
+    'recognizing text':'正在识别号码'
+  };
+  const label = map[m.status];
+  if(!label) return;
+  let pct = 65;
+  if(m.status === 'loading tesseract core') pct = (m.progress || 0) * 30;
+  else if(m.status === 'loading language traineddata') pct = 30 + (m.progress || 0) * 40;
+  else if(m.status === 'recognizing text') pct = 70 + (m.progress || 0) * 30;
+  ocrBarFill.style.width = Math.round(pct) + '%';
+  ocrStatus.textContent = label + (m.status === 'recognizing text' ? '（' + Math.round((m.progress || 0) * 100) + '%）' : '…');
+}
+
+function loadImageEl(url){
+  return new Promise((res, rej)=>{ const im = new Image(); im.onload = ()=>res(im); im.onerror = rej; im.src = url; });
+}
+function upscale(img){
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  if(w >= 1000) return img;
+  const scale = Math.min(3, 1400 / Math.max(1, w));
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
+  cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+  return cv;
+}
+function normPlate(s){ return String(s).toUpperCase().replace(/O/g,'0').replace(/I/g,'1'); }
+
+/* 从 OCR 文本中提取候选序号：长度匹配当前号牌类型，至少含 2 个数字，
+   兼容「城市字母与序号粘连」「长串尾部粘连」等常见识别情况 */
+function extractCandidates(text){
+  const len = state.type === 'blue' ? 5 : 6;
+  const t = normPlate(text);
+  const runs = t.match(/[0-9A-Z]{4,}/g) || [];
+  const seen = new Set(), out = [];
+  const valid = s => /^[0-9A-HJ-NP-Z]+$/.test(s) && (s.match(/[0-9]/g) || []).length >= 2;
+  const push = s => { if(valid(s) && !seen.has(s)){ seen.add(s); out.push(s); } };
+  for(const run of runs){
+    if(run.length === len) push(run);
+    else if(run.length === len + 1 && /[A-Z]/.test(run[0])) push(run.slice(1));
+    else if(run.length > len + 1 && /[A-Z]/.test(run[run.length - len - 1])) push(run.slice(-len));
+  }
+  return out.slice(0, 60);
+}
+
+let ocrBusy = false;
+async function handleImage(file){
+  if(ocrBusy) return;
+  if(!file || !/^image\//.test(file.type)){
+    ocrError.textContent = '请选择图片文件（PNG / JPG / WebP / BMP）。';
+    ocrError.style.display = 'block';
+    return;
+  }
+  ocrBusy = true;
+  ocrError.style.display = 'none';
+  btnRank.disabled = true;
+  const url = URL.createObjectURL(file);
+  ocrPreview.src = url; ocrPreview.style.display = '';
+  ocrBar.style.display = ''; ocrBarFill.style.width = '2%';
+  ocrStatus.textContent = '准备中…';
+  try{
+    const worker = await getOcrWorker();
+    const img = await loadImageEl(url);
+    const { data } = await worker.recognize(upscale(img));
+    const cands = extractCandidates(data.text);
+    if(cands.length){
+      candArea.value = cands.join('\n');
+      ocrStatus.textContent = '识别完成，共 ' + cands.length + ' 个候选号码，请校对后排序';
+      ocrBarFill.style.width = '100%';
+    } else {
+      candArea.value = '';
+      ocrStatus.textContent = '未识别到符合规则的号码，可更换更清晰的截图，或在上方手动粘贴号码';
+    }
+  }catch(err){
+    ocrError.textContent = 'OCR 暂不可用（识别组件需联网加载，可能是网络受限）。可直接在候选框手动粘贴号码后排序。';
+    ocrError.style.display = 'block';
+    ocrBar.style.display = 'none';
+    ocrStatus.textContent = '';
+  }
+  ocrBusy = false;
+  btnRank.disabled = candArea.value.trim() === '';
+}
+
+dropzone.addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', ()=>{
+  if(fileInput.files[0]) handleImage(fileInput.files[0]);
+  fileInput.value = '';
+});
+['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev, e=>{ e.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, e=>{ e.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', e=>{
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f) handleImage(f);
+});
+document.addEventListener('paste', e=>{
+  const items = e.clipboardData && e.clipboardData.items;
+  if(!items) return;
+  for(const it of items){
+    if(it.type && it.type.indexOf('image') === 0){
+      const f = it.getAsFile();
+      if(f){ setMode('ocr'); handleImage(f); e.preventDefault(); break; }
+    }
+  }
+});
+candArea.addEventListener('input', ()=>{ btnRank.disabled = candArea.value.trim() === ''; });
+btnRank.addEventListener('click', ()=>{
+  const len = state.type === 'blue' ? 5 : 6;
+  const tokens = candArea.value.split(/[\s,，;；、]+/)
+    .map(s=>normPlate(s).replace(/[^0-9A-Z]/g,''))
+    .filter(s=>s.length === len);
+  if(!tokens.length){
+    ocrError.textContent = '没有符合格式的号码（' + (len === 5 ? '蓝牌需 5 位' : '绿牌需 6 位') + '），请检查后重试。';
+    ocrError.style.display = 'block';
+    return;
+  }
+  ocrError.style.display = 'none';
+  const uniq = [...new Set(tokens)];
+  const results = uniq.map(b=>decorate(analyze(b), state.type)).sort((a,b)=>b.score - a.score);
+  state.batchResults = results;
+  renderBatch();
+  renderResult(results[0], true);
+});
+
+function validateManual(){
+  const need = state.type==='blue' ? 5 : 6;
+  manualLabel.textContent = state.type==='blue' ? '输入 5 位序号' : '输入 6 位序号（首位 D/F）';
+  manualInput.maxLength = need;
+  manualInput.placeholder = state.type==='blue' ? '如 88A88' : '如 D88888';
+  const v = manualInput.value;
+  btnTest.disabled = v.length !== need;
+  greenWarn.style.display = (state.type==='green' && v.length && v[0]!=='D' && v[0]!=='F') ? 'block' : 'none';
+}
+manualInput.addEventListener('input', ()=>{
+  manualInput.value = manualInput.value.toUpperCase().replace(/[^0-9A-Z]/g,'').replace(/[IO]/g,'');
+  validateManual();
+});
+manualInput.addEventListener('keydown', e=>{
+  if(e.key === 'Enter' && !btnTest.disabled) btnTest.click();
+});
+btnTest.addEventListener('click', ()=>{
+  const body = manualInput.value;
+  if(body.length !== (state.type==='blue'?5:6)) return;
+  renderResult(decorate(analyze(body), state.type), true);
+});
+validateManual();
+
+/* 预热随机样本缓存，避免首次测算卡顿 */
+setTimeout(()=>getSample('blue'), 400);
+setTimeout(()=>getSample('green'), 900);
+</script>
+</body>
+</html>
