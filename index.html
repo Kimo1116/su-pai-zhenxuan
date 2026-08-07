@@ -881,7 +881,7 @@ function renderResult(a, animate){
 /* ================= 批量 ================= */
 function renderBatch(){
   if(!state.batchResults.length){ batchPanel.style.display = 'none'; return; }
-  batchPanel.style.display = '';
+  batchPanel.style.display = 'block';
   if(state.expandedIndex >= state.batchResults.length) state.expandedIndex = 0;
   batchList.innerHTML = state.batchResults.map((a,i)=>{
     if(!a.rank) decorate(a, a.type || state.type);
