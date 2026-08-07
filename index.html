@@ -1389,10 +1389,10 @@ function hexToRgba(hex, a){
   const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
   return 'rgba('+r+','+g+','+b+','+a+')';
 }
-/* 把前 5 名的圈选 + 标注画到指定画布（半透明方块 + 右上角号牌标签，尽量不遮挡相邻号牌） */
+/* 把前 10 名的圈选 + 标注画到指定画布（半透明方块 + 右上角号牌标签，尽量不遮挡相邻号牌） */
 function paintAnnotations(cv, imgEl){
   const posMap = state.ocrPosMap || {};
-  const top = state.batchResults.slice(0, 5);
+  const top = state.batchResults.slice(0, 10);
   const targets = top.filter(a=>posMap[a.body]);
   const dispW = imgEl.clientWidth, dispH = imgEl.clientHeight;
   if(!targets.length || !dispW || !dispH){ cv.style.display = 'none'; return; }
@@ -1488,7 +1488,7 @@ btnRank.addEventListener('click', ()=>{
   ocrError.style.display = 'none';
   const uniq = [...new Set(tokens)];
   const results = uniq.map(b=>decorate(analyze(b), state.type)).sort((a,b)=>b.score - a.score);
-  state.batchResults = results.slice(0, 5);
+  state.batchResults = results.slice(0, 10);
   state.expandedIndex = 0;
   renderBatch();
   renderResult(results[0], true);
